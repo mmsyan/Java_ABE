@@ -10,7 +10,7 @@ import java.util.Base64;
 import java.util.Properties;
 
 /**
- * 基于身份加密(Identity-Based Encryption, IBE)演示类
+ * 基于双线性对的身份加密(Identity-Based Encryption, IBE)演示类
  * 实现了IBE方案的设置、密钥生成、加密和解密过程
  */
 public class IBEDemo {
