@@ -167,7 +167,7 @@ public class CPABEDemo {
         cpabeInstance.setUp("a.properties");
 
         // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 3, 5, 6};
+        int[] userAttributes = new int[]{1, 3, 6};
         cpabeInstance.keyGeneration(userAttributes, skFilePath);
 
         // 随机选取Gt上的元素作为消息并打印出来
@@ -181,8 +181,33 @@ public class CPABEDemo {
         System.out.println("M_ 是 " + M_);
     }
 
+    public static void testCase3() {
+        //测试文件路径
+        String skFilePath = "src/CPABE/CPABEFile/sk.properties";
+        String ctFilePath = "src/CPABE/CPABEFile/ct.properties";
+        System.out.println("\n测试案例3：");
+        // 初始化操作，设置属性上限为10
+        CPABEDemo cpabeInstance = new CPABEDemo(20);
+        cpabeInstance.setUp("a.properties");
+
+        // 用户输入自己属性对应的访问控制树来生成密钥
+        int[] userAttributes = new int[]{1, 3, 6};
+        cpabeInstance.keyGeneration(userAttributes, skFilePath);
+
+        // 随机选取Gt上的元素作为消息并打印出来
+        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
+        System.out.println("M 是 " + M);
+        CPABEAccessTree messageAttributes = CPABEAccessTree.getInstance3();
+        cpabeInstance.encrypt(messageAttributes, M, ctFilePath);
+
+
+        Element M_ = cpabeInstance.decrypt(messageAttributes, userAttributes, skFilePath, ctFilePath);
+        System.out.println("M_ 是 " + M_);
+    }
+
     public static void main(String[] args) {
         testCase1();
         testCase2();
+        testCase3();
     }
 }

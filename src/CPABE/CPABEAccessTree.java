@@ -216,6 +216,22 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
         return accessTree;
     }
 
+    public static CPABEAccessTree getInstance3() {
+        Node root = new Node(3,null);
+        Node node1 = new Node(1, null);
+        Node node2 = new Node(1,null);
+        Node node3 = new Node(2, null);
+        root.addChildren(new Node[]{node1, node2, node3});
+
+        node1.addChildren(new Node[]{new Node(1), new Node(2)});
+        node2.addChildren(new Node[]{new Node(3), new Node(4)});
+        node3.addChildren(new Node[]{new Node(1), new Node(6), new Node(7)});
+
+        CPABEAccessTree accessTree = new CPABEAccessTree(root);
+        accessTree.generateLeaveSequence();
+        return accessTree;
+    }
+
     public static void main(String[] args) {
         Pairing bp = PairingFactory.getPairing("a.properties");
 
