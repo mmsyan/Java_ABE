@@ -1,5 +1,6 @@
 package KPABE;
 
+import CPABE.CPABEAccessTree;
 import Utils.MathUtils;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
@@ -15,6 +16,7 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         public int threshold; // 非叶子节点具有门限阈值；叶子节点的门限阈值置为-1
         public int attribute; // 叶子节点具有属性值；非叶子节点的属性值置为-1
         public List<Node> children; // 非叶子节点具有子节点，以列表维护。注意论文当中的index(child)代表child在children当中的下标+1
+        public int leaveSequence; // 叶子节点需要有一个编号
 
         // 对于叶子节点进行初始化操作：提供叶子节点所对应的属性
         public Node(int attribute) {
@@ -84,6 +86,16 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         generatePolySecretHelper(this.root, bp);
     }
 
+    public void generateLeaveSequence() {
+        int sequenceNumber = 1;
+        for (KPABEAccessTree.Node n : this) {
+            if (n.isLeave()) {
+                n.leaveSequence = sequenceNumber;
+                sequenceNumber += 1;
+            }
+        }
+    }
+
     // accessTree的层序遍历迭代器
     @Override
     public Iterator<Node> iterator() {
@@ -125,7 +137,7 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
             for (int m : messageAttributes) {
                 if (n.attribute == m) {
                     //如果被包含，返回e(Di, Ei)
-                    return bp.pairing(Di.get(n.attribute), Ei.get(n.attribute));
+                    return bp.pairing(Di.get(n.leaveSequence), Ei.get(n.attribute));
                 }
             }
             return null;
@@ -185,7 +197,7 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         nodes[2].addChildren(new Node[]{nodes[4], nodes[5], nodes[6]});
 
         KPABEAccessTree accesstree = new KPABEAccessTree(nodes[0]);
-
+        accesstree.generateLeaveSequence();
         return accesstree;
     }
 
@@ -203,7 +215,25 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         node3.addChildren(new Node[]{new Node(5), new Node(6), new Node(7)});
 
         KPABEAccessTree accesstree = new KPABEAccessTree(root);
+        accesstree.generateLeaveSequence();
+        return accesstree;
+    }
 
+    public static KPABEAccessTree getInstance3() {
+        Pairing bp = PairingFactory.getPairing("a.properties");
+
+        Node root = new Node(3,null);
+        Node node1 = new Node(1, null);
+        Node node2 = new Node(1,null);
+        Node node3 = new Node(2, null);
+        root.addChildren(new Node[]{node1, node2, node3});
+
+        node1.addChildren(new Node[]{new Node(1), new Node(2)});
+        node2.addChildren(new Node[]{new Node(3), new Node(4)});
+        node3.addChildren(new Node[]{new Node(1), new Node(6), new Node(7)});
+
+        KPABEAccessTree accesstree = new KPABEAccessTree(root);
+        accesstree.generateLeaveSequence();
         return accesstree;
     }
 

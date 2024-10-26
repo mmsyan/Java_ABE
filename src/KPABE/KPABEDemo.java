@@ -83,10 +83,9 @@ public class KPABEDemo {
         for (KPABEAccessTree.Node n : userAttributes) {
             if (n.isLeave()) {
                 Element qx0 = MathUtils.qx(n.polynomial, bp.getZr().newElement(0));
-                // 为用户的每个属性i生成对应的Di
+                // 为用户访问控制树的每个叶子节点x生成对应的Dx(不是跟着属性i走！)
                 Element D = this.g.powZn(qx0.div(this.msk_ti[n.attribute])).getImmutable();
-                skProperties.setProperty("Attribute" + n.attribute, ConversionUtils.bytes2String(D.toBytes()));
-                System.out.println("已为用户属性 【" + (n.attribute) + "】 生成密钥");
+                skProperties.setProperty("D" + n.leaveSequence, ConversionUtils.bytes2String(D.toBytes()));
             }
         }
         PropertiesUtils.store(skProperties, skFilePath);
@@ -116,10 +115,13 @@ public class KPABEDemo {
                 Element Ei = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(EiStr)).getImmutable();
                 ciphertextEi.put(i, Ei);
             }
-            if (skProperties.containsKey("Attribute" + i)) {
-                String DiStr = skProperties.getProperty("Attribute" + i);
+        }
+
+        for (KPABEAccessTree.Node n : userAttributes) {
+            if (n.isLeave()) {
+                String DiStr = skProperties.getProperty("D" + n.leaveSequence);
                 Element Di = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiStr)).getImmutable();
-                secretKeyDi.put(i, Di);
+                secretKeyDi.put(n.leaveSequence, Di);
             }
         }
 
@@ -168,7 +170,7 @@ public class KPABEDemo {
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = kpabeInstance.bp.getGT().newRandomElement().getImmutable();
         System.out.println("M 是 " + M);
-        kpabeInstance.encrypt(new int[]{1, 3, 6, 7}, M, ctFilePath);
+        kpabeInstance.encrypt(new int[]{1, 3, 6}, M, ctFilePath);
 
         // 用户输入自己属性对应的访问控制树来生成密钥
         KPABEAccessTree tree2 = KPABEAccessTree.getInstance2();
@@ -178,10 +180,33 @@ public class KPABEDemo {
         System.out.println("M_ 是 " + M_);
     }
 
+    public static void testCase3() {
+        //测试文件路径
+        String skFilePath = "src/KPABE/KPABEFile/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEFile/ct.properties";
+        System.out.println("\n测试案例3：");
+        // 初始化操作，设置属性上限为10
+        KPABEDemo kpabeInstance = new KPABEDemo(20);
+        kpabeInstance.setUp("a.properties");
+
+        // 随机选取Gt上的元素作为消息并打印出来
+        Element M = kpabeInstance.bp.getGT().newRandomElement().getImmutable();
+        System.out.println("M 是 " + M);
+        kpabeInstance.encrypt(new int[]{1, 3, 6}, M, ctFilePath);
+
+        // 用户输入自己属性对应的访问控制树来生成密钥
+        KPABEAccessTree userAttributes = KPABEAccessTree.getInstance3();
+        kpabeInstance.keyGeneration(userAttributes, skFilePath);
+
+        Element M_ = kpabeInstance.decrypt(userAttributes, skFilePath, ctFilePath);
+        System.out.println("M_ 是 " + M_);
+    }
+
 
 
     public static void main(String[] args) {
         testCase1();
         testCase2();
+        testCase3();
     }
 }
