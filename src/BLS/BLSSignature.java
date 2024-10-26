@@ -4,6 +4,10 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
+/**
+ * 双线性对签名（BLS）实现示例。
+ * 这个类演示了如何使用双线性对技术生成签名并验证签名。
+ */
 public class BLSSignature {
     public static void main(String[] args) {
         // Set Up
