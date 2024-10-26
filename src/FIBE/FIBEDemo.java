@@ -11,7 +11,7 @@ import java.util.Properties;
 
 /**
  * FIBE (Fuzzy Identity Based Encryption) 演示类
- * 该类展示了FIBE加密方案的初始化、密钥生成、加密和解密过程。
+ * 该类展示了模糊属性加密方案的初始化、密钥生成、加密和解密过程。
  */
 public class FIBEDemo {
     private int universe; // 属性宇宙的大小
