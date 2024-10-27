@@ -120,4 +120,29 @@ public class MathUtils {
         }
         return delta;
     }
+
+    /**
+     * 检查数组a是否是数组b的子集，使用Set进行快速检查。
+     *
+     * @param a 待检查的数组（子集候选）
+     * @param b 要检查的数组（超集候选）
+     * @return 如果a是b的子集，则返回true；否则返回false。
+     */
+    public static boolean isSubsetUsingSet(int[] a, int[] b) {
+        // 将数组b转换为Set，以便快速查找
+        Set<Integer> setB = new HashSet<>();
+        for (int element : b) {
+            setB.add(element);
+        }
+
+        // 检查数组a中的每个元素是否都在集合b中
+        for (int element : a) {
+            if (!setB.contains(element)) {
+                return false; // 如果任何一个元素不在集合b中，返回false
+            }
+        }
+
+        // 如果所有元素都在集合b中，返回true
+        return true;
+    }
 }
