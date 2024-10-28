@@ -117,9 +117,9 @@ public class CPABEDemo {
         String CWaveStr = ctProperties.getProperty(("CWave"));
         Element CWave = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(CWaveStr)).getImmutable();
 
+        // 解密还需要C和D
         String DStr = skProperties.getProperty("D");
         Element D = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DStr)).getImmutable();
-
         String CStr = ctProperties.getProperty("C");
         Element C = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CStr)).getImmutable();
 
