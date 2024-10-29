@@ -208,5 +208,6 @@ public class KPABEDemo {
         testCase1();
         testCase2();
         testCase3();
+        System.out.println(System.getProperty("file.encoding"));
     }
 }
