@@ -96,7 +96,7 @@ public class AESUtils {
 
             // 测试文件加密解密
             File inputFile = new File("src/Utils/AESFile/input.txt");
-            File encryptedFile = new File("src/Utils/AESFile/encrypted.aes");
+            File encryptedFile = new File("src/Utils/AESFile/encrypted.txt");
             File decryptedFile = new File("src/Utils/AESFile/decrypted.txt");
 
             encrypt(inputFile, encryptedFile, secretKey);
