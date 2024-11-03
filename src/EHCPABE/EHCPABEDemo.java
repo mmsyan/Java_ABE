@@ -1,6 +1,5 @@
 package EHCPABE;
 
-import CPABE.CPABEAccessTree;
 import Utils.AESUtils;
 import Utils.ConversionUtils;
 import Utils.MathUtils;
@@ -15,15 +14,27 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Properties;
 
+/**
+ * Xiao, M., Li, H., Huang, Q., Yu, S., & Susilo, W. (2022).
+ * Attribute-Based Hierarchical Access Control With Extendable Policy.
+ * IEEE Transactions on Information Forensics and Security, 17, 1868–1883.
+ * https://doi.org/10.1109/tifs.2022.3173412
+ *
+ * 2024.11.03，实现了setUp keyGeneration encrypt和decrypt四个步骤；尚没有完成exExtension和inExtension步骤
+ * */
 public class EHCPABEDemo {
+    // 全局属性大小
     private int universe;
+
+    // 双线性对相关参数：
     private Pairing bp;
     private Element g; //G1
     private Element alpha; //Zr
-    private Element beta;  //Zr
     private Element h; // h = g^beta;
-    private Element gAlpha;
+    private Element msk_beta;  //Zr
+    private Element msk_gAlpha;
 
+    // 记载明文路径与密文路径匹配关系的映射；记载明文路径与解密后文件路径匹配关系的映射
     private HashMap<String, String> plainText2Ciphertext;
     private HashMap<String, String> plainText2DecryptedText;
 
@@ -33,31 +44,35 @@ public class EHCPABEDemo {
         plainText2DecryptedText = m2;
     }
 
+    // 初始化步骤，需要双线性对参数作为参数
     public void setUp(String pairingFilePath) {
         this.bp = PairingFactory.getPairing(pairingFilePath);
         this.g = bp.getG1().newRandomElement().getImmutable(); // g <- G1
         this.alpha = bp.getZr().newRandomElement().getImmutable(); // alpha <- Zr
-        this.beta = bp.getZr().newRandomElement().getImmutable(); // beta <- Zr
-        this.h = this.g.powZn(this.beta).getImmutable(); // h = g^beta
-        this.gAlpha = this.g.powZn(this.alpha).getImmutable();  // g^alpha
+        this.msk_beta = bp.getZr().newRandomElement().getImmutable(); // beta <- Zr
+        this.h = this.g.powZn(this.msk_beta).getImmutable(); // h = g^beta
+        this.msk_gAlpha = this.g.powZn(this.alpha).getImmutable();  // g^alpha
     }
 
+    // 密钥生成步骤，需要用户属性和密钥文件存储地址作为参数
     public void keyGeneration(int[] userAttributes, String skFilePath) {
         Properties skProperties = new Properties();
 
-        Element r = this.bp.getZr().newRandomElement().getImmutable(); // r <- Zr
-        Element gr = this.g.powZn(r).getImmutable();
+        // r <- Zr; gR = g^r
+        Element r = this.bp.getZr().newRandomElement().getImmutable();
+        Element gR = this.g.powZn(r).getImmutable();
 
-        Element D = gAlpha.mul(h.powZn(r)).getImmutable(); // D = g^α * h^r
+        // D = g^α * h^r
+        Element D = msk_gAlpha.mul(h.powZn(r)).getImmutable();
         skProperties.setProperty("D", ConversionUtils.bytes2String(D.toBytes()));
 
-        for (int i : userAttributes) { // for each attribute j ∈ S(user Attributes)
+        // for each attribute j ∈ S(user Attributes)
+        for (int i : userAttributes) {
             Element ri = this.bp.getZr().newRandomElement().getImmutable(); // rj <- Zr
-
             Element hi = MathUtils.H1(String.valueOf(i), bp).getImmutable(); // H(i)
             Element hiri = hi.powZn(ri).getImmutable(); // hiri = H(i)^ri
 
-            Element Di = gr.mul(hiri).getImmutable(); // Di = g^r * H(i)^ri
+            Element Di = gR.mul(hiri).getImmutable(); // Di = g^r * H(i)^ri
             Element DiPrime = this.h.powZn(ri).getImmutable(); // Di' = h^ri
 
             skProperties.setProperty("Di"+i, ConversionUtils.bytes2String(Di.toBytes()));
@@ -67,7 +82,7 @@ public class EHCPABEDemo {
         PropertiesUtils.store(skProperties, skFilePath);
     }
 
-
+    // 加密步骤，需要密文属性访问控制树，注意消息已经集成在访问控制树当中了
     public void encrypt(EHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
         Properties ctProperties = new Properties();
 
