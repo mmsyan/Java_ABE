@@ -12,6 +12,7 @@ import java.util.Set;
 
 public class MathUtils {
 
+    // String => g ∈ G1
     public static Element H1(String string, Pairing bp) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -23,6 +24,8 @@ public class MathUtils {
         }
     }
 
+
+    // Element => bytes[]
     public static byte[] H2(Element e) {
         String eString = new String(e.toBytes());
         try {
@@ -33,6 +36,59 @@ public class MathUtils {
             throw new RuntimeException(err);
         }
     }
+
+    // 将G1, G2, GT群中的元素映射到字节流的哈希函数
+    public static byte[] H2(Element g1Element, Element g2Element, Element gtElement) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // 将三个元素转换为字节流并拼接
+            byte[] bytesG1 = g1Element.toBytes();
+            byte[] bytesG2 = g2Element.toBytes();
+            byte[] bytesGT = gtElement.toBytes();
+            byte[] combinedBytes = new byte[bytesG1.length + bytesG2.length + bytesGT.length];
+
+            // 拼接字节流
+            System.arraycopy(bytesG1, 0, combinedBytes, 0, bytesG1.length);
+            System.arraycopy(bytesG2, 0, combinedBytes, bytesG1.length, bytesG2.length);
+            System.arraycopy(bytesGT, 0, combinedBytes, bytesG1.length + bytesG2.length, bytesGT.length);
+
+            // 更新MessageDigest
+            md.update(combinedBytes);
+
+            // 返回哈希结果
+            return md.digest();
+        } catch (NoSuchAlgorithmException err) {
+            throw new RuntimeException(err);
+        }
+    }
+
+    // H2: GT * G0 * GT => {0, 1}^l
+    public static byte[] EHCPABE_H2(Element gt1Element, Element g2Element, Element gtElement) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // 将三个元素转换为字节流并拼接
+            byte[] bytesG1 = gt1Element.toBytes();
+            byte[] bytesG2 = g2Element.toBytes();
+            byte[] bytesGT = gtElement.toBytes();
+            byte[] combinedBytes = new byte[bytesG1.length + bytesG2.length + bytesGT.length];
+
+            // 拼接字节流
+            System.arraycopy(bytesG1, 0, combinedBytes, 0, bytesG1.length);
+            System.arraycopy(bytesG2, 0, combinedBytes, bytesG1.length, bytesG2.length);
+            System.arraycopy(bytesGT, 0, combinedBytes, bytesG1.length + bytesG2.length, bytesGT.length);
+
+            // 更新MessageDigest
+            md.update(combinedBytes);
+
+            // 返回哈希结果
+            return md.digest();
+        } catch (NoSuchAlgorithmException err) {
+            throw new RuntimeException(err);
+        }
+    }
+
 
     public static byte[] xor(byte[] b1, byte[] b2) {
         int minLength = Math.min(b1.length, b2.length);

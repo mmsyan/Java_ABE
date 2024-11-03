@@ -1,6 +1,7 @@
 package EHCPABE;
 
 import CPABE.CPABEAccessTree;
+import Utils.AESUtils;
 import Utils.ConversionUtils;
 import Utils.MathUtils;
 import Utils.PropertiesUtils;
@@ -8,6 +9,9 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
+import javax.crypto.SecretKey;
+import java.io.File;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -20,8 +24,13 @@ public class EHCPABEDemo {
     private Element h; // h = g^beta;
     private Element gAlpha;
 
-    public EHCPABEDemo(int u) {
+    private HashMap<String, String> plainText2Ciphertext;
+    private HashMap<String, String> plainText2DecryptedText;
+
+    public EHCPABEDemo(int u, HashMap<String, String> m1,  HashMap<String, String> m2) {
         this.universe = u;
+        plainText2Ciphertext = m1;
+        plainText2DecryptedText = m2;
     }
 
     public void setUp(String pairingFilePath) {
@@ -58,56 +67,71 @@ public class EHCPABEDemo {
         PropertiesUtils.store(skProperties, skFilePath);
     }
 
-    public void encrypt(CPABEAccessTree messageAttributes, Element message, String ctFilePath) {
+
+    public void encrypt(EHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
         Properties ctProperties = new Properties();
 
-        Element s = bp.getZr().newRandomElement().getImmutable(); // s <- Zr
-        messageAttributes.generatePolySecret(bp, s);
+        Element qA_0 = bp.getZr().newRandomElement().getImmutable(); // s <- Zr
+        messageAttributes.generatePolySecret(bp, qA_0);
 
-        Element CWave = message.mul((bp.pairing(g, g).powZn(alpha.mul(s))));
-        Element C = h.powZn(s);
-        ctProperties.setProperty("CWave", ConversionUtils.bytes2String(CWave.toBytes()));
-        ctProperties.setProperty("C", ConversionUtils.bytes2String(C.toBytes()));
 
-        for (CPABEAccessTree.Node y : messageAttributes) {
-            if (y.isLeave()) {
-                int yCount = y.leaveSequence;
-                Element Cy = g.powZn(y.polynomial[0]).getImmutable();
-                Element CyPrime = (MathUtils.H1(String.valueOf(y.attribute), bp)).powZn(y.polynomial[0]);
+        for (EHCPABEAccessTree.Node n : messageAttributes) {
+            if (n.isLeave()) {
+                int yCount = n.id;
+                Element Cy = h.powZn(n.polynomial[0]).getImmutable();
+                Element CyPrime = (MathUtils.H1(String.valueOf(n.attribute), bp)).powZn(n.polynomial[0]);
                 ctProperties.setProperty("Cy"+yCount, ConversionUtils.bytes2String(Cy.toBytes()));
                 ctProperties.setProperty("CyPrime"+yCount, ConversionUtils.bytes2String(CyPrime.toBytes()));
+            }
+            else {
+                int xCount = n.id;
+                Element Rx = bp.getGT().newRandomElement().getImmutable();
+                Element C1x = Rx.mul(bp.pairing(g.powZn(alpha), g.powZn(n.polynomial[0]))).getImmutable();
+                Element C2x = g.powZn(n.polynomial[0]);
+                SecretKey Kx = AESUtils.generateSecretKey(MathUtils.EHCPABE_H2(C1x, C2x, Rx));
+                // 打印加密阶段时恢复出来的密钥key
+                System.out.println("加密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
+
+
+                if (n.filePath != null) {
+                    File message = new File(n.filePath);
+                    File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
+                    AESUtils.encrypt(message, ciphertext, Kx);
+                }
+                ctProperties.setProperty("C1x"+xCount, ConversionUtils.bytes2String(C1x.toBytes()));
+                ctProperties.setProperty("C2x"+xCount, ConversionUtils.bytes2String(C2x.toBytes()));
             }
         }
 
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
-    public Element decrypt(CPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) {
+    public void decrypt(EHCPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) throws Exception {
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
         // 解密需要准备好Dj和Dj'：这与属性是有关的
-        HashMap<Integer, Element> secretKeyDj = new HashMap<>();
-        HashMap<Integer, Element> secretKeyDjPrime = new HashMap<>();
-        for (int j = 0; j < universe; j++) {
-            if (skProperties.containsKey("Dj"+j)) {
-                String DjStr = skProperties.getProperty("Dj"+j);
-                Element Dj = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DjStr)).getImmutable();
-                secretKeyDj.put(j, Dj);
+        HashMap<Integer, Element> secretKeyDi = new HashMap<>();
+        HashMap<Integer, Element> secretKeyDiPrime = new HashMap<>();
+        for (int i = 0; i < universe; i++) {
+            if (skProperties.containsKey("Di"+i)) {
+                String DiStr = skProperties.getProperty("Di"+i);
+                Element Di = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiStr)).getImmutable();
+                secretKeyDi.put(i, Di);
             }
-            if (skProperties.containsKey("DjPrime"+j)) {
-                String DjPrimeStr = skProperties.getProperty("DjPrime"+j);
-                Element DjPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DjPrimeStr)).getImmutable();
-                secretKeyDjPrime.put(j, DjPrime);
+            if (skProperties.containsKey("DiPrime"+i)) {
+                String DiPrimeStr = skProperties.getProperty("DiPrime"+i);
+                Element DiPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiPrimeStr)).getImmutable();
+                secretKeyDiPrime.put(i, DiPrime);
             }
         }
 
         // 解密还需要准备好Cy和Cy'：这与叶子节点是有关的
         HashMap<Integer, Element> leaveNodeCy = new HashMap<>();
         HashMap<Integer, Element> leaveNodeCyPrime = new HashMap<>();
-        for (CPABEAccessTree.Node n : messageAttributes) {
+        for (EHCPABEAccessTree.Node n : messageAttributes) {
             if (n.isLeave()) {
-                int yCount = n.leaveSequence;
+                int yCount = n.id;
                 String CyStr = ctProperties.getProperty(("Cy"+yCount));
                 Element Cy = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CyStr)).getImmutable();
                 String CyPrimeStr = ctProperties.getProperty("CyPrime"+yCount);
@@ -117,106 +141,78 @@ public class EHCPABEDemo {
             }
         }
 
-        String CWaveStr = ctProperties.getProperty(("CWave"));
-        Element CWave = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(CWaveStr)).getImmutable();
-
-        // 解密还需要C和D
         String DStr = skProperties.getProperty("D");
         Element D = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DStr)).getImmutable();
-        String CStr = ctProperties.getProperty("C");
-        Element C = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CStr)).getImmutable();
 
+        for (EHCPABEAccessTree.Node n : messageAttributes) {
+            if (!n.isLeave() && n.filePath != null) {
+                String C1xStr = ctProperties.getProperty("C1x"+n.id);
+                Element C1x = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(C1xStr)).getImmutable();
+                String C2xStr = ctProperties.getProperty("C2x"+n.id);
+                Element C2x = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(C2xStr)).getImmutable();
 
-        Element A = messageAttributes.decryptNode(userAttributes, secretKeyDj, secretKeyDjPrime, leaveNodeCy, leaveNodeCyPrime, bp);
-        if (A != null) {
-            System.out.println("密文属性和用户属性访问控制树匹配，解密成功！");
-            return CWave.div((bp.pairing(C, D)).div(A));
+                Element decNode = messageAttributes.decryptNode(n, userAttributes, secretKeyDi, secretKeyDiPrime, leaveNodeCy, leaveNodeCyPrime, bp);
+                if (decNode != null) {
+                    System.out.println("密文属性和用户属性访问控制树匹配，解密成功！");
+                    Element Rx = C1x.div((bp.pairing(C2x, D)).div(decNode));
+
+                    SecretKey Kx = AESUtils.generateSecretKey(MathUtils.EHCPABE_H2(C1x, C2x, Rx));
+
+                    // 打印解密阶段时恢复出来的密钥key
+                    System.out.println("解密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
+
+                    File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
+                    File decryptedText = new File(plainText2DecryptedText.get(n.filePath));
+                    AESUtils.decrypt(ciphertext, decryptedText, Kx);
+                }
+                else {
+                    System.out.println("密文属性和用户属性访问控制树不匹配，解密失败！");
+                }
+            }
         }
-        else {
-            System.out.println("密文属性和用户属性访问控制树不匹配，解密失败！");
-            return null;
-        }
+
     }
 
 
 
-    public static void testCase1() {
+    public static void testCase1() throws Exception {
         //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test1/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test1/ct.properties";
+        String skFilePath = "src/EHCPABE/EHCPABEFile/test1/sk.properties";
+        String ctFilePath = "src/EHCPABE/EHCPABEFile/test1/ct.properties";
         System.out.println("\n测试案例1：");
         // 初始化操作，设置属性上限为10
-        EHCPABEDemo cpabeInstance = new EHCPABEDemo(10);
-        cpabeInstance.setUp("a.properties");
+
+        HashMap<String, String> m1 = new HashMap<>();
+        m1.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextA.txt");
+        m1.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextB.txt");
+        m1.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextC.txt");
+        m1.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextD.txt");
+
+        HashMap<String, String> m2 = new HashMap<>();
+        m2.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextA.txt");
+        m2.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextB.txt");
+        m2.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextC.txt");
+        m2.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextD.txt");
+
+        EHCPABEDemo ehcpabeInstance = new EHCPABEDemo(10, m1, m2);
+        ehcpabeInstance.setUp("a.properties");
 
         // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 2, 5};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree tree1 = CPABEAccessTree.getInstance1();
-        cpabeInstance.encrypt(tree1, M, ctFilePath);
+        int[] userAttributes = new int[]{1, 2, 5, 6};
+        ehcpabeInstance.keyGeneration(userAttributes, skFilePath);
 
 
-        Element M_ = cpabeInstance.decrypt(tree1, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
-    }
-
-    public static void testCase2() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test2/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test2/ct.properties";
-        System.out.println("\n测试案例2：");
-        // 初始化操作，设置属性上限为10
-        EHCPABEDemo cpabeInstance = new EHCPABEDemo(20);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 3, 6};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree messageAttributes = CPABEAccessTree.getInstance2();
-        cpabeInstance.encrypt(messageAttributes, M, ctFilePath);
+        EHCPABEAccessTree tree1 = EHCPABEAccessTree.getInstance1();
+        ehcpabeInstance.encrypt(tree1, ctFilePath);
 
 
-        Element M_ = cpabeInstance.decrypt(messageAttributes, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
-    }
-
-    public static void testCase3() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test3/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test3/ct.properties";
-        System.out.println("\n测试案例3：");
-        // 初始化操作，设置属性上限为10
-        EHCPABEDemo cpabeInstance = new EHCPABEDemo(20);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 3, 6};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree messageAttributes = CPABEAccessTree.getInstance3();
-        cpabeInstance.encrypt(messageAttributes, M, ctFilePath);
-
-
-        Element M_ = cpabeInstance.decrypt(messageAttributes, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
+        ehcpabeInstance.decrypt(tree1, userAttributes, skFilePath, ctFilePath);
     }
 
 
 
-    public static void main(String[] args) {
+
+    public static void main(String[] args) throws Exception {
         testCase1();
-        testCase2();
-        testCase3();
     }
 }

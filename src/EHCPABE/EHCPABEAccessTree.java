@@ -26,10 +26,11 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         }
 
         // 对于非叶子节点进行初始化操作：提供非叶子节点对应的阈值和子节点；也可以通过后续addChild和addChildren操作添加非叶子节点的子节点
-        public Node(int threshold, List<Node> children) {
+        public Node(int threshold, String filePath, List<Node> children) {
             this.polynomial = new Element[threshold];
             this.threshold = threshold;
             this.attribute = -1;
+            this.filePath = filePath;
             if (children != null) {
                 this.children = children;
             } else {
@@ -121,7 +122,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
     }
 
 
-    private Element decryptNodeHelper(Node n, int[] userAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy,  Map<Integer, Element> CyPrime, Pairing bp) {
+    public Element decryptNode(Node n, int[] userAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy,  Map<Integer, Element> CyPrime, Pairing bp) {
         // 如果n是叶子节点
         if (n.isLeave()) {
             // 检测n的属性是否在userAttributes当中被包含
@@ -143,7 +144,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         for (int i = 0; i < n.children.size(); i++){
             Node childNode = n.children.get(i);
             // 递归调用，恢复子节点的秘密值
-            Element childSecret = decryptNodeHelper(childNode, userAttributes, Dj, DjPrime, Cy, CyPrime, bp);
+            Element childSecret = decryptNode(childNode, userAttributes, Dj, DjPrime, Cy, CyPrime, bp);
             if (childSecret != null){
                 // 注意子节点child的index(child)就是child节点在n.children中的下标+1
                 index2ValidChildren.put(i+1, childNode);
@@ -169,9 +170,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         return null;
     }
 
-    public Element decryptNode(int[] messageAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy, Map<Integer, Element> CyPrime,Pairing bp) {
-        return decryptNodeHelper(root, messageAttributes, Dj, DjPrime, Cy, CyPrime, bp);
-    }
+
 
     public void generateLeaveSequence() {
         int leaveIndex = 1;
@@ -189,75 +188,31 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
     }
 
     public static EHCPABEAccessTree getInstance1() {
-        Node[] nodes = new Node[7];
-        nodes[0] = new Node(2,null);
-        nodes[1] = new Node(1);
-        nodes[2] = new Node(2,null);
-        nodes[3] = new Node(5);
-        nodes[0].addChildren(new Node[]{nodes[1], nodes[2], nodes[3]});
+        Node rA = new Node(2, "src/EHCPABE/EHCPABEFile/test1/FileA.txt", null);
+        Node B = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileB.txt",null);
+        Node C = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileC.txt", null);
+        rA.addChild(B); rA.addChild(C);
 
-        nodes[4] = new Node(2);
-        nodes[5] = new Node(3);
-        nodes[6] = new Node(4);
-        nodes[2].addChildren(new Node[]{nodes[4], nodes[5], nodes[6]});
+        Node D = new Node(2,"src/EHCPABE/EHCPABEFile/test1/FileD.txt",  null);
+        Node B1 = new Node(1);
+        B.addChild(D);B.addChild(B1);
 
-        EHCPABEAccessTree accessTree = new EHCPABEAccessTree(nodes[0]);
+        Node C2 = new Node(2);
+        Node C3 = new Node(3);
+        C.addChild(C2);C.addChild(C3);
+
+        Node D4 = new Node(4);Node D5 = new Node(5); Node D6 = new Node(6);
+        D.addChild(D4);D.addChild(D5);D.addChild(D6);
+
+        EHCPABEAccessTree accessTree = new EHCPABEAccessTree(rA);
         accessTree.generateLeaveSequence();
         return accessTree;
     }
 
-    public static EHCPABEAccessTree getInstance2() {
-        Node root = new Node(3,null);
-        Node node1 = new Node(1, null);
-        Node node2 = new Node(1,null);
-        Node node3 = new Node(2, null);
-        root.addChildren(new Node[]{node1, node2, node3});
 
-        node1.addChildren(new Node[]{new Node(1), new Node(2)});
-        node2.addChildren(new Node[]{new Node(3), new Node(4)});
-        node3.addChildren(new Node[]{new Node(5), new Node(6), new Node(7)});
-
-        EHCPABEAccessTree accessTree = new EHCPABEAccessTree(root);
-        accessTree.generateLeaveSequence();
-        return accessTree;
-    }
-
-    public static EHCPABEAccessTree getInstance3() {
-        Node root = new Node(3,null);
-        Node node1 = new Node(1, null);
-        Node node2 = new Node(1,null);
-        Node node3 = new Node(2, null);
-        root.addChildren(new Node[]{node1, node2, node3});
-
-        node1.addChildren(new Node[]{new Node(1), new Node(2)});
-        node2.addChildren(new Node[]{new Node(3), new Node(4)});
-        node3.addChildren(new Node[]{new Node(1), new Node(6), new Node(7)});
-
-        EHCPABEAccessTree accessTree = new EHCPABEAccessTree(root);
-        accessTree.generateLeaveSequence();
-        return accessTree;
-    }
 
     public static void main(String[] args) {
-        Pairing bp = PairingFactory.getPairing("a.properties");
-
-        Node[] nodes = new Node[7];
-        nodes[0] = new Node(2,null);
-        nodes[1] = new Node(1);
-        nodes[2] = new Node(2,null);
-        nodes[3] = new Node(5);
-
-        nodes[0].addChild(nodes[1]);
-        nodes[0].addChild(nodes[2]);
-        nodes[0].addChild(nodes[3]);
-
-        nodes[4] = new Node(2);
-        nodes[5] = new Node(3);
-        nodes[6] = new Node(4);
-        nodes[2].addChild(nodes[4]);
-        nodes[2].addChild(nodes[5]);
-        nodes[2].addChild(nodes[6]);
-
-        EHCPABEAccessTree accesstree = new EHCPABEAccessTree(nodes[0]);
+        EHCPABEAccessTree A = getInstance1();
+        int i = 0;
     }
 }
