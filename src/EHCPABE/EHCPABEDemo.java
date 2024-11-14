@@ -70,9 +70,9 @@ public class EHCPABEDemo {
         for (int i : userAttributes) {
             Element ri = this.bp.getZr().newRandomElement().getImmutable(); // rj <- Zr
             Element hi = MathUtils.H1(String.valueOf(i), bp).getImmutable(); // H(i)
-            Element hiri = hi.powZn(ri).getImmutable(); // hiri = H(i)^ri
+            Element hiRi = hi.powZn(ri).getImmutable(); // hiRi = H(i)^ri
 
-            Element Di = gR.mul(hiri).getImmutable(); // Di = g^r * H(i)^ri
+            Element Di = gR.mul(hiRi).getImmutable(); // Di = g^r * H(i)^ri
             Element DiPrime = this.h.powZn(ri).getImmutable(); // Di' = h^ri
 
             skProperties.setProperty("Di"+i, ConversionUtils.bytes2String(Di.toBytes()));
@@ -86,10 +86,11 @@ public class EHCPABEDemo {
     public void encrypt(EHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
         Properties ctProperties = new Properties();
 
+        // 加密第一部分：在给定的层级访问控制树上面自上而下的生成对应的多项式
         Element qA_0 = bp.getZr().newRandomElement().getImmutable(); // s <- Zr
         messageAttributes.generatePolySecret(bp, qA_0);
 
-
+        // 加密第二部分：对于所有非叶子节点x生成：Cx(1) Cx(2) Cx(3)。对于所有叶子节点y生成：Cy Cy'
         for (EHCPABEAccessTree.Node n : messageAttributes) {
             if (n.isLeave()) {
                 int yCount = n.id;
@@ -125,7 +126,7 @@ public class EHCPABEDemo {
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
-        // 解密需要准备好Dj和Dj'：这与属性是有关的
+        // 解密需要准备好Di和Di'：这是与属性有关的解密项，是在密钥生成部分生成的内容。将其从密钥文件中恢复出来存储到secretKeyDi和secretKeyDiPrime中
         HashMap<Integer, Element> secretKeyDi = new HashMap<>();
         HashMap<Integer, Element> secretKeyDiPrime = new HashMap<>();
         for (int i = 0; i < universe; i++) {
@@ -141,7 +142,7 @@ public class EHCPABEDemo {
             }
         }
 
-        // 解密还需要准备好Cy和Cy'：这与叶子节点是有关的
+        // 解密还需要准备好Cy和Cy'：这是与叶子节点是有关的，是在加密部分生成的内容。将其从密文文件中恢复出来存储到leaveNodeCy和leaveNodeCyPrime中
         HashMap<Integer, Element> leaveNodeCy = new HashMap<>();
         HashMap<Integer, Element> leaveNodeCyPrime = new HashMap<>();
         for (EHCPABEAccessTree.Node n : messageAttributes) {

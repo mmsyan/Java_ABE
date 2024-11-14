@@ -122,15 +122,15 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
     }
 
 
-    public Element decryptNode(Node n, int[] userAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy,  Map<Integer, Element> CyPrime, Pairing bp) {
+    public Element decryptNode(Node n, int[] userAttributes, Map<Integer, Element> Di , Map<Integer, Element> DiPrime, Map<Integer, Element> Cy,  Map<Integer, Element> CyPrime, Pairing bp) {
         // 如果n是叶子节点
         if (n.isLeave()) {
             // 检测n的属性是否在userAttributes当中被包含
             for (int u : userAttributes) {
                 if (n.attribute == u) {
                     //如果被包含，返回e(Di, Cx)/e(Di', Cx')
-                    Element e_Di_Cx = bp.pairing(Dj.get(n.attribute), Cy.get(n.id)).getImmutable();
-                    Element e_DiPrime_CxPrime = bp.pairing(DjPrime.get(n.attribute), CyPrime.get(n.id)).getImmutable();
+                    Element e_Di_Cx = bp.pairing(Di.get(n.attribute), Cy.get(n.id)).getImmutable();
+                    Element e_DiPrime_CxPrime = bp.pairing(DiPrime.get(n.attribute), CyPrime.get(n.id)).getImmutable();
                     return e_Di_Cx.div(e_DiPrime_CxPrime).getImmutable();
                 }
             }
@@ -144,7 +144,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         for (int i = 0; i < n.children.size(); i++){
             Node childNode = n.children.get(i);
             // 递归调用，恢复子节点的秘密值
-            Element childSecret = decryptNode(childNode, userAttributes, Dj, DjPrime, Cy, CyPrime, bp);
+            Element childSecret = decryptNode(childNode, userAttributes, Di, DiPrime, Cy, CyPrime, bp);
             if (childSecret != null){
                 // 注意子节点child的index(child)就是child节点在n.children中的下标+1
                 index2ValidChildren.put(i+1, childNode);
