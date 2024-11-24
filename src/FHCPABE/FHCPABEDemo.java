@@ -74,8 +74,10 @@ public class FHCPABEDemo {
             Element rj = this.bp.getZr().newRandomElement().getImmutable(); // rj <- Zr
             Element hj = MathUtils.H1(String.valueOf(j), bp).getImmutable(); // H(i)
             Element hjRj = hj.powZn(rj).getImmutable(); // hiRi = H(i)^ri
+
             Element Dj = gR.mul(hjRj).getImmutable(); // Dj = g^r * H(j)^rj
             Element DjPrime = this.h.powZn(rj).getImmutable(); // Dj' = h^rj
+
             skProperties.setProperty("Dj"+j, ConversionUtils.bytes2String(Dj.toBytes()));
             skProperties.setProperty("DjPrime"+j, ConversionUtils.bytes2String(DjPrime.toBytes()));
         }
@@ -88,18 +90,17 @@ public class FHCPABEDemo {
 
         // 加密第一部分：生成ck={ck1, ck2, …… ckk}和s1 s2 …… sk in Zp
         Element[] ck = new Element[messageAttributes.k];
+        Element[] s = new Element[messageAttributes.k];
         for (int i = 0; i < ck.length; i++) {
             ck[i] = bp.getGT().newRandomElement().getImmutable();
-        }
-        Element[] s = new Element[messageAttributes.k];
-        for (int i = 0; i < s.length; i++) {
             s[i] = bp.getZr().newRandomElement().getImmutable();
         }
+
         for (FHCPABEAccessTree.Node n : messageAttributes) {
             if (n.isLevelNode()) {
-                SecretKey Kx = AESUtils.generateSecretKey(ck[n.id-1].toBytes());
+                SecretKey Kx = AESUtils.generateSecretKey(ck[n.levelId-1].toBytes());
                 // 打印加密阶段时恢复出来的密钥key
-                System.out.println("加密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
+                System.out.println("加密阶段的密钥"+n.levelId+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
                 File message = new File(n.filePath);
                 File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
                 AESUtils.encrypt(message, ciphertext, Kx);
@@ -108,11 +109,7 @@ public class FHCPABEDemo {
 
         // 加密第二部分：对于所有的层级节点i，生成CiWave和CiPrime。这是密文的一部分。
         for (int i = 1; i <= messageAttributes.k; i++) {
-            Element CiWaveHelper = bp.pairing(g,g).powZn(alpha.mul(s[i-1])).getImmutable();
-            // todo：错误调试Fi有问题
-            System.out.println("F"+i+CiWaveHelper);
-
-            Element CiWave = ck[i-1].mul(CiWaveHelper).getImmutable();
+            Element CiWave = ck[i-1].mul(eggAlpha.powZn(s[i-1])).getImmutable(); //Ci~ = ck * (e(g, g)^alpha)^si
             Element CiPrime = g.powZn(s[i-1]).getImmutable(); // Ci' = g^si
             ctProperties.setProperty("CiWave"+i, ConversionUtils.bytes2String(CiWave.toBytes()));
             ctProperties.setProperty("CiPrime"+i, ConversionUtils.bytes2String(CiPrime.toBytes()));
@@ -131,14 +128,14 @@ public class FHCPABEDemo {
                 ctProperties.setProperty("Cxy"+xyCount, ConversionUtils.bytes2String(Cxy.toBytes()));
                 ctProperties.setProperty("CxyPrime"+xyCount, ConversionUtils.bytes2String(CxyPrime.toBytes()));
             }
-            // 传输节点生成内容
+            // 传输节点的孩子节点生成需要的内容
             if (n.isTransparentNode()) {
                 int xCount = n.id;
                 Element q_xy_0 = n.polynomial[0];
 
                 for (int j = 0; j < n.children.size(); j++) {
                     if (!n.children.get(j).isLeave()) {
-                        Element CPower1 = bp.pairing(g,g).powZn(alpha.mul((q_xy_0.add(n.children.get(j).polynomial[0])))).getImmutable();
+                        Element CPower1 = eggAlpha.powZn((q_xy_0.add(n.children.get(j).polynomial[0]))).getImmutable();
                         //todo: FHCPABE_H2()没有实现
                         Element CPower2 = bp.pairing(g,g).powZn(alpha.mul(q_xy_0)).getImmutable();
                         Element CPower = CPower1.mul(CPower2);
@@ -147,7 +144,6 @@ public class FHCPABEDemo {
                 }
             }
         }
-
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
@@ -192,29 +188,20 @@ public class FHCPABEDemo {
         for (FHCPABEAccessTree.Node n : messageAttributes) {
             if (n.isLevelNode()) {
                 Element Ai = messageAttributes.decryptNode(n, userAttributes, secretKeyDj, secretKeyDjPrime, leaveNodeCxy, leaveNodeCxyPrime, bp).getImmutable();
-                // todo：错误调试Ai
-                System.out.println("A"+n.id+Ai);
 
                 if (Ai != null) {
-                    String CiPrimeStr = ctProperties.getProperty(("CiPrime"+n.id));
+                    String CiPrimeStr = ctProperties.getProperty(("CiPrime"+n.levelId));
                     Element CiPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CiPrimeStr)).getImmutable();
 
-                    String CiWaveStr = ctProperties.getProperty(("CiWave"+n.id));
+                    String CiWaveStr = ctProperties.getProperty(("CiWave"+n.levelId));
                     Element CiWave = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(CiWaveStr)).getImmutable();
 
-
                     Element Fi = bp.pairing(CiPrime, D).div(Ai).getImmutable();
-                    // todo：错误调试Fi
-                    System.out.println("F"+n.id+Fi);
-
                     Element cki = CiWave.div(Fi);
-                    System.out.println(cki);
-
 
                     SecretKey Kx = AESUtils.generateSecretKey(cki.toBytes());
-
                     // 打印解密阶段时恢复出来的密钥key
-                    System.out.println("解密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
+                    System.out.println("解密阶段的密钥"+n.levelId+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
 
                     File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
                     File decryptedText = new File(plainText2DecryptedText.get(n.filePath));

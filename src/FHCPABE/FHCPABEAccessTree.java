@@ -16,6 +16,7 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         public String filePath; // 如果非叶子节点对应一个文献，那么这个非叶子节点称作level node。注意，如果按照树的层序遍历，每层只允许有一个level node
         public List<Node> children; // 非叶子节点具有子节点，以列表维护。注意论文当中的index(child)代表child在children当中的下标+1
         public int id; // 每个节点都有一个编号
+        public int levelId; // 每个level node都有一个层级编号
 
         // 对于叶子节点进行初始化操作：提供叶子节点所对应的属性
         public Node(int attribute) {
@@ -87,7 +88,7 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         for (int i = 0; i < n.children.size(); i++) {
             Node childNode = n.children.get(i);
             // childNode的常数项要么是秘密值，要么是q(index)。这里index(child)就是child在children数组的下标+1
-            childNode.polynomial[0] = childNode.isLevelNode() ? s[childNode.id-1] : MathUtils.qx(n.polynomial, bp.getZr().newElement(i+1));
+            childNode.polynomial[0] = childNode.isLevelNode() ? s[childNode.levelId-1] : MathUtils.qx(n.polynomial, bp.getZr().newElement(i+1));
             // 继续递归生成秘密
             generatePolySecretHelper(childNode, bp, s);
         }
@@ -185,15 +186,14 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
 
 
     public void generateLeaveSequence() {
-        int levelIndex = 1;
+        int level = 1;
         int leaveIndex = 1;
         int noLeaveIndex = 1;
         for (Node n : this) {
             if (n.isLevelNode()) {
-                n.id = levelIndex;
-                levelIndex += 1;
+                n.levelId = level;
+                level += 1;
                 this.k++;
-                continue;
             }
             if (n.isLeave()) {
                 n.id = leaveIndex;
@@ -206,9 +206,9 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         }
     }
 
-    public static FHCPABEAccessTree getInstance1() {
-        Node AND1 = new Node(2, "src/FHCPABE/FHCPABEFile/test1/FileA.txt", null);
-        Node AND2 = new Node(2, "src/FHCPABE/FHCPABEFile/test1/FileB.txt",null);
+    public static FHCPABEAccessTree getInstance2() {
+        Node AND1 = new Node(2, "src/FHCPABE/FHCPABEFile/test2/FileA.txt", null);
+        Node AND2 = new Node(2, "src/FHCPABE/FHCPABEFile/test2/FileB.txt",null);
         Node attr3 = new Node(3);
         AND1.addChild(AND2); AND1.addChild(attr3);
 
@@ -221,10 +221,21 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         return accessTree;
     }
 
+    public static FHCPABEAccessTree getInstance1() {
+        Node AND1 = new Node(2, "src/FHCPABE/FHCPABEFile/test1/FileA.txt", null);
+        Node attr1 = new Node(1);
+        Node attr2 = new Node(2);
+        AND1.addChild(attr1); AND1.addChild(attr2);
+
+        FHCPABEAccessTree accessTree = new FHCPABEAccessTree(AND1);
+        accessTree.generateLeaveSequence();
+        return accessTree;
+    }
+
 
 
     public static void main(String[] args) {
-        FHCPABEAccessTree A = getInstance1();
-        int i = 0;
+        getInstance1();
+        int a;
     }
 }

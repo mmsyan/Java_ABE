@@ -48,13 +48,6 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
             this.children.add(child);
         }
 
-        // 非叶子节点添加多个子节点
-        public void addChildren(Node[] newChildren) {
-            if (newChildren != null && newChildren.length > 0) {
-                this.children.addAll(Arrays.asList(newChildren)); // 添加多个子节点                 // 更新子节点数量
-            }
-        }
-
     }
 
     // accessTree：包装好根节点
