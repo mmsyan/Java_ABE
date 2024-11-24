@@ -1,6 +1,5 @@
 package FHCPABE;
 
-import EHCPABE.EHCPABEAccessTree;
 import Utils.AESUtils;
 import Utils.ConversionUtils;
 import Utils.MathUtils;
@@ -19,7 +18,7 @@ import java.util.Properties;
  * Xiao, M., Li, H., Huang, Q., Yu, S., & Susilo, W. (2022).
  * Attribute-Based Hierarchical Access Control With Extendable Policy.
  * IEEE Transactions on Information Forensics and Security, 17, 1868–1883.
- * https://doi.org/10.1109/tifs.2022.3173412
+ * <a href="https://doi.org/10.1109/tifs.2022.3173412">...</a>
  *
  * 2024.11.03，实现了setUp keyGeneration encrypt和decrypt四个步骤；尚没有完成exExtension和inExtension步骤
  * */
@@ -35,6 +34,7 @@ public class FHCPABEDemo {
     private Element msk_beta;  //Zr
     private Element msk_gAlpha;
     private Element eggAlpha;
+
 
     // 记载明文路径与密文路径匹配关系的映射；记载明文路径与解密后文件路径匹配关系的映射
     private HashMap<String, String> plainText2Ciphertext;
@@ -65,7 +65,7 @@ public class FHCPABEDemo {
         Element r = this.bp.getZr().newRandomElement().getImmutable();
         Element gR = this.g.powZn(r).getImmutable();
 
-        // D = g^α * h^r
+        // D = g^α * h^r = g^α * g^βr = g^(α+βr)
         Element D = msk_gAlpha.mul(h.powZn(r)).getImmutable();
         skProperties.setProperty("D", ConversionUtils.bytes2String(D.toBytes()));
 
@@ -76,103 +76,142 @@ public class FHCPABEDemo {
             Element hjRj = hj.powZn(rj).getImmutable(); // hiRi = H(i)^ri
             Element Dj = gR.mul(hjRj).getImmutable(); // Dj = g^r * H(j)^rj
             Element DjPrime = this.h.powZn(rj).getImmutable(); // Dj' = h^rj
-            skProperties.setProperty("Di"+j, ConversionUtils.bytes2String(Dj.toBytes()));
-            skProperties.setProperty("DiPrime"+j, ConversionUtils.bytes2String(DjPrime.toBytes()));
+            skProperties.setProperty("Dj"+j, ConversionUtils.bytes2String(Dj.toBytes()));
+            skProperties.setProperty("DjPrime"+j, ConversionUtils.bytes2String(DjPrime.toBytes()));
         }
         PropertiesUtils.store(skProperties, skFilePath);
     }
 
     // 加密步骤，需要密文属性访问控制树，注意消息已经集成在访问控制树当中了
-    public void encrypt(EHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
+    public void encrypt(FHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
         Properties ctProperties = new Properties();
 
-        // 加密第一部分：在给定的层级访问控制树上面自上而下的生成对应的多项式
-        Element qA_0 = bp.getZr().newRandomElement().getImmutable(); // s <- Zr
-        messageAttributes.generatePolySecret(bp, qA_0);
-
-        // 加密第二部分：对于所有非叶子节点x生成：Cx(1) Cx(2) Cx(3)。对于所有叶子节点y生成：Cy Cy'
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
-            if (n.isLeave()) {
-                int yCount = n.id;
-                Element Cy = h.powZn(n.polynomial[0]).getImmutable();
-                Element CyPrime = (MathUtils.H1(String.valueOf(n.attribute), bp)).powZn(n.polynomial[0]);
-                ctProperties.setProperty("Cy"+yCount, ConversionUtils.bytes2String(Cy.toBytes()));
-                ctProperties.setProperty("CyPrime"+yCount, ConversionUtils.bytes2String(CyPrime.toBytes()));
-            }
-            else {
-                int xCount = n.id;
-                Element Rx = bp.getGT().newRandomElement().getImmutable();
-                Element C1x = Rx.mul(bp.pairing(g.powZn(alpha), g.powZn(n.polynomial[0]))).getImmutable();
-                Element C2x = g.powZn(n.polynomial[0]);
-                SecretKey Kx = AESUtils.generateSecretKey(MathUtils.EHCPABE_H2(C1x, C2x, Rx));
+        // 加密第一部分：生成ck={ck1, ck2, …… ckk}和s1 s2 …… sk in Zp
+        Element[] ck = new Element[messageAttributes.k];
+        for (int i = 0; i < ck.length; i++) {
+            ck[i] = bp.getGT().newRandomElement().getImmutable();
+        }
+        Element[] s = new Element[messageAttributes.k];
+        for (int i = 0; i < s.length; i++) {
+            s[i] = bp.getZr().newRandomElement().getImmutable();
+        }
+        for (FHCPABEAccessTree.Node n : messageAttributes) {
+            if (n.isLevelNode()) {
+                SecretKey Kx = AESUtils.generateSecretKey(ck[n.id-1].toBytes());
                 // 打印加密阶段时恢复出来的密钥key
                 System.out.println("加密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
+                File message = new File(n.filePath);
+                File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
+                AESUtils.encrypt(message, ciphertext, Kx);
+            }
+        }
 
+        // 加密第二部分：对于所有的层级节点i，生成CiWave和CiPrime。这是密文的一部分。
+        for (int i = 1; i <= messageAttributes.k; i++) {
+            Element CiWaveHelper = bp.pairing(g,g).powZn(alpha.mul(s[i-1])).getImmutable();
+            // todo：错误调试Fi有问题
+            System.out.println("F"+i+CiWaveHelper);
 
-                if (n.filePath != null) {
-                    File message = new File(n.filePath);
-                    File ciphertext = new File(plainText2Ciphertext.get(n.filePath));
-                    AESUtils.encrypt(message, ciphertext, Kx);
+            Element CiWave = ck[i-1].mul(CiWaveHelper).getImmutable();
+            Element CiPrime = g.powZn(s[i-1]).getImmutable(); // Ci' = g^si
+            ctProperties.setProperty("CiWave"+i, ConversionUtils.bytes2String(CiWave.toBytes()));
+            ctProperties.setProperty("CiPrime"+i, ConversionUtils.bytes2String(CiPrime.toBytes()));
+        }
+
+        // 加密第三部分：在给定的层级访问控制树上面自上而下的生成对应的多项式。注意，level node的多项式生成特殊一些；root必须是level node
+        messageAttributes.generatePolySecret(bp, s);
+
+        // 加密第四部分：对于所有叶子节点xy生成：Cxy Cxy'.对于所有传输节点x的孩子生成：C^x(j) Cx(2) Cx(3)
+        for (FHCPABEAccessTree.Node n : messageAttributes) {
+            // 叶子节点生成Cxy和Cxy'
+            if (n.isLeave()) {
+                int xyCount = n.id;
+                Element Cxy = h.powZn(n.polynomial[0]).getImmutable();
+                Element CxyPrime = (MathUtils.H1(String.valueOf(n.attribute), bp)).powZn(n.polynomial[0]);
+                ctProperties.setProperty("Cxy"+xyCount, ConversionUtils.bytes2String(Cxy.toBytes()));
+                ctProperties.setProperty("CxyPrime"+xyCount, ConversionUtils.bytes2String(CxyPrime.toBytes()));
+            }
+            // 传输节点生成内容
+            if (n.isTransparentNode()) {
+                int xCount = n.id;
+                Element q_xy_0 = n.polynomial[0];
+
+                for (int j = 0; j < n.children.size(); j++) {
+                    if (!n.children.get(j).isLeave()) {
+                        Element CPower1 = bp.pairing(g,g).powZn(alpha.mul((q_xy_0.add(n.children.get(j).polynomial[0])))).getImmutable();
+                        //todo: FHCPABE_H2()没有实现
+                        Element CPower2 = bp.pairing(g,g).powZn(alpha.mul(q_xy_0)).getImmutable();
+                        Element CPower = CPower1.mul(CPower2);
+                        ctProperties.setProperty("CPower_"+xCount+"_"+j, ConversionUtils.bytes2String(CPower.toBytes()));
+                    }
                 }
-                ctProperties.setProperty("C1x"+xCount, ConversionUtils.bytes2String(C1x.toBytes()));
-                ctProperties.setProperty("C2x"+xCount, ConversionUtils.bytes2String(C2x.toBytes()));
             }
         }
 
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
-    public void decrypt(EHCPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) throws Exception {
+    public void decrypt(FHCPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) throws Exception {
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
         // 解密需要准备好Di和Di'：这是与属性有关的解密项，是在密钥生成部分生成的内容。将其从密钥文件中恢复出来存储到secretKeyDi和secretKeyDiPrime中
-        HashMap<Integer, Element> secretKeyDi = new HashMap<>();
-        HashMap<Integer, Element> secretKeyDiPrime = new HashMap<>();
-        for (int i = 0; i < universe; i++) {
-            if (skProperties.containsKey("Di"+i)) {
-                String DiStr = skProperties.getProperty("Di"+i);
-                Element Di = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiStr)).getImmutable();
-                secretKeyDi.put(i, Di);
+        HashMap<Integer, Element> secretKeyDj = new HashMap<>();
+        HashMap<Integer, Element> secretKeyDjPrime = new HashMap<>();
+        for (int j = 0; j < universe; j++) {
+            if (skProperties.containsKey("Dj"+j)) {
+                String DjStr = skProperties.getProperty("Dj"+j);
+                Element Dj = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DjStr)).getImmutable();
+                secretKeyDj.put(j, Dj);
             }
-            if (skProperties.containsKey("DiPrime"+i)) {
-                String DiPrimeStr = skProperties.getProperty("DiPrime"+i);
-                Element DiPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiPrimeStr)).getImmutable();
-                secretKeyDiPrime.put(i, DiPrime);
+            if (skProperties.containsKey("DjPrime"+j)) {
+                String DjPrimeStr = skProperties.getProperty("DjPrime"+j);
+                Element DjPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DjPrimeStr)).getImmutable();
+                secretKeyDjPrime.put(j, DjPrime);
             }
         }
 
-        // 解密还需要准备好Cy和Cy'：这是与叶子节点是有关的，是在加密部分生成的内容。将其从密文文件中恢复出来存储到leaveNodeCy和leaveNodeCyPrime中
-        HashMap<Integer, Element> leaveNodeCy = new HashMap<>();
-        HashMap<Integer, Element> leaveNodeCyPrime = new HashMap<>();
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
+        // 解密还需要准备好Cxy和Cxy'：这是与叶子节点是有关的，是在加密部分生成的内容。将其从密文文件中恢复出来存储到leaveNodeCxy和leaveNodeCxyPrime中
+        HashMap<Integer, Element> leaveNodeCxy = new HashMap<>();
+        HashMap<Integer, Element> leaveNodeCxyPrime = new HashMap<>();
+        for (FHCPABEAccessTree.Node n : messageAttributes) {
             if (n.isLeave()) {
                 int yCount = n.id;
-                String CyStr = ctProperties.getProperty(("Cy"+yCount));
-                Element Cy = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CyStr)).getImmutable();
-                String CyPrimeStr = ctProperties.getProperty("CyPrime"+yCount);
-                Element CyPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CyPrimeStr)).getImmutable();
-                leaveNodeCy.put(yCount, Cy);
-                leaveNodeCyPrime.put(yCount, CyPrime);
+                String CxyStr = ctProperties.getProperty(("Cxy"+yCount));
+                Element Cxy = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CxyStr)).getImmutable();
+                String CxyPrimeStr = ctProperties.getProperty("CxyPrime"+yCount);
+                Element CxyPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CxyPrimeStr)).getImmutable();
+                leaveNodeCxy.put(yCount, Cxy);
+                leaveNodeCxyPrime.put(yCount, CxyPrime);
             }
         }
 
         String DStr = skProperties.getProperty("D");
         Element D = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DStr)).getImmutable();
 
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
-            if (!n.isLeave() && n.filePath != null) {
-                String C1xStr = ctProperties.getProperty("C1x"+n.id);
-                Element C1x = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(C1xStr)).getImmutable();
-                String C2xStr = ctProperties.getProperty("C2x"+n.id);
-                Element C2x = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(C2xStr)).getImmutable();
+        for (FHCPABEAccessTree.Node n : messageAttributes) {
+            if (n.isLevelNode()) {
+                Element Ai = messageAttributes.decryptNode(n, userAttributes, secretKeyDj, secretKeyDjPrime, leaveNodeCxy, leaveNodeCxyPrime, bp).getImmutable();
+                // todo：错误调试Ai
+                System.out.println("A"+n.id+Ai);
 
-                Element decNode = messageAttributes.decryptNode(n, userAttributes, secretKeyDi, secretKeyDiPrime, leaveNodeCy, leaveNodeCyPrime, bp);
-                if (decNode != null) {
-                    System.out.println("密文属性和用户属性访问控制树匹配，解密成功！");
-                    Element Rx = C1x.div((bp.pairing(C2x, D)).div(decNode));
+                if (Ai != null) {
+                    String CiPrimeStr = ctProperties.getProperty(("CiPrime"+n.id));
+                    Element CiPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CiPrimeStr)).getImmutable();
 
-                    SecretKey Kx = AESUtils.generateSecretKey(MathUtils.EHCPABE_H2(C1x, C2x, Rx));
+                    String CiWaveStr = ctProperties.getProperty(("CiWave"+n.id));
+                    Element CiWave = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(CiWaveStr)).getImmutable();
+
+
+                    Element Fi = bp.pairing(CiPrime, D).div(Ai).getImmutable();
+                    // todo：错误调试Fi
+                    System.out.println("F"+n.id+Fi);
+
+                    Element cki = CiWave.div(Fi);
+                    System.out.println(cki);
+
+
+                    SecretKey Kx = AESUtils.generateSecretKey(cki.toBytes());
 
                     // 打印解密阶段时恢复出来的密钥key
                     System.out.println("解密阶段的密钥"+n.id+" : "+Base64.getEncoder().encodeToString(Kx.getEncoded()));
@@ -193,32 +232,30 @@ public class FHCPABEDemo {
 
     public static void testCase1() throws Exception {
         //测试文件路径
-        String skFilePath = "src/EHCPABE/EHCPABEFile/test1/sk.properties";
-        String ctFilePath = "src/EHCPABE/EHCPABEFile/test1/ct.properties";
+        String skFilePath = "src/FHCPABE/FHCPABEFile/test1/sk.properties";
+        String ctFilePath = "src/FHCPABE/FHCPABEFile/test1/ct.properties";
         System.out.println("\n测试案例1：");
         // 初始化操作，设置属性上限为10
 
         HashMap<String, String> m1 = new HashMap<>();
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextA.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextB.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextC.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextD.txt");
+        m1.put("src/FHCPABE/FHCPABEFile/test1/FileA.txt", "src/FHCPABE/FHCPABEFile/test1/CiphertextA.txt");
+        m1.put("src/FHCPABE/FHCPABEFile/test1/FileB.txt", "src/FHCPABE/FHCPABEFile/test1/CiphertextB.txt");
+
 
         HashMap<String, String> m2 = new HashMap<>();
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextA.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextB.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextC.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextD.txt");
+        m2.put("src/FHCPABE/FHCPABEFile/test1/FileA.txt", "src/FHCPABE/FHCPABEFile/test1/decryptedTextA.txt");
+        m2.put("src/FHCPABE/FHCPABEFile/test1/FileB.txt", "src/FHCPABE/FHCPABEFile/test1/decryptedTextB.txt");
+
 
         FHCPABEDemo ehcpabeInstance = new FHCPABEDemo(10, m1, m2);
         ehcpabeInstance.setUp("a.properties");
 
         // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 2, 5, 6};
+        int[] userAttributes = new int[]{1, 2, 3, 4};
         ehcpabeInstance.keyGeneration(userAttributes, skFilePath);
 
 
-        EHCPABEAccessTree tree1 = EHCPABEAccessTree.getInstance1();
+        FHCPABEAccessTree tree1 = FHCPABEAccessTree.getInstance1();
         ehcpabeInstance.encrypt(tree1, ctFilePath);
 
 

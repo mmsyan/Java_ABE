@@ -13,7 +13,7 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         public Element[] polynomial; // 每个节点被赋予一个多项式。多项式的常数项系数=多项式在x=0处的取值=该节点的秘密值
         public int threshold; // 非叶子节点具有门限阈值；叶子节点的门限阈值置为-1
         public int attribute; // 叶子节点具有属性值；非叶子节点的属性值置为-1
-        public String filePath; // 非叶子节点可能对应一个文献
+        public String filePath; // 如果非叶子节点对应一个文献，那么这个非叶子节点称作level node。注意，如果按照树的层序遍历，每层只允许有一个level node
         public List<Node> children; // 非叶子节点具有子节点，以列表维护。注意论文当中的index(child)代表child在children当中的下标+1
         public int id; // 每个节点都有一个编号
 
@@ -42,48 +42,61 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
             return this.children == null;
         }
 
+        // 判断节点是否为level node
+        public boolean isLevelNode() {
+            return this.filePath != null;
+        }
+
+        // 判断节点是否为transparent node
+        public boolean isTransparentNode() {
+            if (this.children == null)
+                return false;
+            for (Node c : this.children) {
+                if (!c.isLeave())
+                    return true;
+            }
+            return false;
+        }
+
         // 非叶子节点添加单个子节点
         public void addChild(Node child) {
             this.children.add(child);
         }
 
-        // 非叶子节点添加多个子节点
-        public void addChildren(Node[] newChildren) {
-            if (newChildren != null && newChildren.length > 0) {
-                this.children.addAll(Arrays.asList(newChildren)); // 添加多个子节点                 // 更新子节点数量
-            }
-        }
 
     }
 
     // accessTree：包装好根节点
     public Node root;
+    // k表示level node的个数，也是这个FHCPABE的Access Tree所携带的文件个数
+    public int k;
 
     public FHCPABEAccessTree(Node root) {
         this.root = root;
     }
 
     // 密钥分发阶段，自顶向下配置各节点的秘密值和多项式。每次操作都是设置当前节点的叶子节点，注意根节点一开始就要提供
-    private void generatePolySecretHelper(Node n, Pairing bp) {
+    private void generatePolySecretHelper(Node n, Pairing bp, Element[] s) {
         // 如果当前节点是叶子节点，直接返回不进行操作(每次操作都是设置当前节点的子节点，叶子节点没有子节点)
         if (n.isLeave()) return;
 
         // 如果当前节点不是叶子节点，首先给当前节点设置好多项式q(x)(注意多项式的常量是秘密值)
         n.polynomial = MathUtils.generateRandomPolynomial(n.threshold, n.polynomial[0], bp);
+
         // 然后对于当前节点的每一个叶子节点child，计算q(index(child))的多项式值作为child的秘密值
         for (int i = 0; i < n.children.size(); i++) {
             Node childNode = n.children.get(i);
-            // 这里index(child)就是child在children数组的下标+1
-            childNode.polynomial[0] = MathUtils.qx(n.polynomial, bp.getZr().newElement(i+1));
-            // 继续递归调研
-            generatePolySecretHelper(childNode, bp);
+            // childNode的常数项要么是秘密值，要么是q(index)。这里index(child)就是child在children数组的下标+1
+            childNode.polynomial[0] = childNode.isLevelNode() ? s[childNode.id-1] : MathUtils.qx(n.polynomial, bp.getZr().newElement(i+1));
+            // 继续递归生成秘密
+            generatePolySecretHelper(childNode, bp, s);
         }
     }
      // 密钥分发阶段，自顶向下配置各节点的秘密值和多项式，注意需要提供根节点的秘密值
-    public void generatePolySecret(Pairing bp, Element rootSecret) {
+    public void generatePolySecret(Pairing bp, Element[] s) {
         // 设置根节点的秘密：秘密值 = 根节点多项式的常数项系数 = 根节点多项式在x=0处的取值
-        this.root.polynomial[0] = rootSecret;
-        generatePolySecretHelper(this.root, bp);
+        this.root.polynomial[0] = s[0];
+        generatePolySecretHelper(this.root, bp, s);
     }
 
     // accessTree的层序遍历迭代器
@@ -121,16 +134,16 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
     }
 
 
-    public Element decryptNode(Node n, int[] userAttributes, Map<Integer, Element> Di , Map<Integer, Element> DiPrime, Map<Integer, Element> Cy,  Map<Integer, Element> CyPrime, Pairing bp) {
+    public Element decryptNode(Node n, int[] userAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cxy,  Map<Integer, Element> CxyPrime, Pairing bp) {
         // 如果n是叶子节点
         if (n.isLeave()) {
             // 检测n的属性是否在userAttributes当中被包含
             for (int u : userAttributes) {
                 if (n.attribute == u) {
-                    //如果被包含，返回e(Di, Cx)/e(Di', Cx')
-                    Element e_Di_Cx = bp.pairing(Di.get(n.attribute), Cy.get(n.id)).getImmutable();
-                    Element e_DiPrime_CxPrime = bp.pairing(DiPrime.get(n.attribute), CyPrime.get(n.id)).getImmutable();
-                    return e_Di_Cx.div(e_DiPrime_CxPrime).getImmutable();
+                    //如果被包含，返回e(Dj, Cxy)/e(Dj', Cxy')
+                    Element e_Dj_Cxy = bp.pairing(Dj.get(n.attribute), Cxy.get(n.id)).getImmutable();
+                    Element e_DjPrime_CxyPrime = bp.pairing(DjPrime.get(n.attribute), CxyPrime.get(n.id)).getImmutable();
+                    return e_Dj_Cxy.div(e_DjPrime_CxyPrime).getImmutable();
                 }
             }
             return null;
@@ -143,7 +156,7 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
         for (int i = 0; i < n.children.size(); i++){
             Node childNode = n.children.get(i);
             // 递归调用，恢复子节点的秘密值
-            Element childSecret = decryptNode(childNode, userAttributes, Di, DiPrime, Cy, CyPrime, bp);
+            Element childSecret = decryptNode(childNode, userAttributes, Dj, DjPrime, Cxy, CxyPrime, bp);
             if (childSecret != null){
                 // 注意子节点child的index(child)就是child节点在n.children中的下标+1
                 index2ValidChildren.put(i+1, childNode);
@@ -172,9 +185,16 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
 
 
     public void generateLeaveSequence() {
+        int levelIndex = 1;
         int leaveIndex = 1;
         int noLeaveIndex = 1;
         for (Node n : this) {
+            if (n.isLevelNode()) {
+                n.id = levelIndex;
+                levelIndex += 1;
+                this.k++;
+                continue;
+            }
             if (n.isLeave()) {
                 n.id = leaveIndex;
                 leaveIndex += 1;
@@ -187,23 +207,16 @@ public class FHCPABEAccessTree implements Iterable<FHCPABEAccessTree.Node> {
     }
 
     public static FHCPABEAccessTree getInstance1() {
-        Node rA = new Node(2, "src/EHCPABE/EHCPABEFile/test1/FileA.txt", null);
-        Node B = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileB.txt",null);
-        Node C = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileC.txt", null);
-        rA.addChild(B); rA.addChild(C);
+        Node AND1 = new Node(2, "src/FHCPABE/FHCPABEFile/test1/FileA.txt", null);
+        Node AND2 = new Node(2, "src/FHCPABE/FHCPABEFile/test1/FileB.txt",null);
+        Node attr3 = new Node(3);
+        AND1.addChild(AND2); AND1.addChild(attr3);
 
-        Node D = new Node(2,"src/EHCPABE/EHCPABEFile/test1/FileD.txt",  null);
-        Node B1 = new Node(1);
-        B.addChild(D);B.addChild(B1);
+        Node attr1 = new Node(1);
+        Node attr2 = new Node(2);
+        AND2.addChild(attr1);AND2.addChild(attr2);
 
-        Node C2 = new Node(2);
-        Node C3 = new Node(3);
-        C.addChild(C2);C.addChild(C3);
-
-        Node D4 = new Node(4);Node D5 = new Node(5); Node D6 = new Node(6);
-        D.addChild(D4);D.addChild(D5);D.addChild(D6);
-
-        FHCPABEAccessTree accessTree = new FHCPABEAccessTree(rA);
+        FHCPABEAccessTree accessTree = new FHCPABEAccessTree(AND1);
         accessTree.generateLeaveSequence();
         return accessTree;
     }
