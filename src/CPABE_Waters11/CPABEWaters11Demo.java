@@ -8,6 +8,7 @@ import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Properties;
 
 public class CPABEWaters11Demo {
@@ -59,13 +60,14 @@ public class CPABEWaters11Demo {
     public void encrypt(LewkoWatersLSSS.LewkoWatersLSSSMatrix messageMatrix, Element message, String ctFilePath) {
         Properties ctProperties = new Properties();
 
+        // vector v = [s, y2, y3, ……, yn] <—— Zp
         Element[] v = new Element[messageMatrix.n];
         for (int i = 0; i < v.length; i++) {
             v[i] = bp.getZr().newRandomElement().getImmutable();
         }
 
-        Element C = message.mul(eggalpha.powZn(v[0]));
-        Element CPrime = g.powZn(v[0]);
+        Element C = message.mul(eggalpha.powZn(v[0])); // C = M * (e(g,g)^alpha)^s
+        Element CPrime = g.powZn(v[0]); // C' = g^s
         ctProperties.setProperty("C", ConversionUtils.bytes2String(C.toBytes()));
         ctProperties.setProperty("CPrime", ConversionUtils.bytes2String(CPrime.toBytes()));
 
@@ -98,8 +100,14 @@ public class CPABEWaters11Demo {
         Element C = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CStr)).getImmutable();
         String CPrimeStr = ctProperties.getProperty("CPrime");
         Element CPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CPrimeStr)).getImmutable();
+        HashMap<Integer, Element> CiphertextCi = new HashMap<>();
+        HashMap<Integer, Element> CiphertextDi = new HashMap<>();
+        for (int i = 0; i < messageMatrix.l; i++) {
+            String CiStr = ctProperties.getProperty("Ci"+i);
+            String DiStr = ctProperties.getProperty("Di"+i);
+        }
 
-        Element eggAlphasRecover;
+        Element eggAlphasRecover = messageMatrix.isMatch(userAttributes);
         return C.div(eggAlphasRecover);
 
     }

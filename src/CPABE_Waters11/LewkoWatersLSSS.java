@@ -155,13 +155,18 @@ public class LewkoWatersLSSS {
         public int n;
         private Element[][] LSSSMatrix;
         private int[] rho;
+        private int[] rhoReverse; // 第一版本的实现中我们要求rho函数是单射，也就是一个属性只会出现一次
 
         public Element[] Mi(int i) {
             return LSSSMatrix[i];
         }
 
         public int rhoi(int i) {
-            return rhoi(i);
+            return rho[i];
+        }
+
+        public int rhoiReverse(int i) {
+            return rhoReverse[i];
         }
 
         public LewkoWatersLSSSMatrix(Node root, Pairing bp) {
@@ -223,6 +228,8 @@ public class LewkoWatersLSSS {
             }
 
             this.LSSSMatrix = new Element[leaveNumber][counter];
+            this.rho = new int[leaveNumber];
+            this.rhoReverse = new int[leaveNumber];
             this.l = leaveNumber;
             this.n = counter;
 
@@ -238,6 +245,7 @@ public class LewkoWatersLSSS {
                         LSSSMatrix[leaveRow][i] = bp.getZr().newElement(pendingNode.LSSSVector.get(i));
                     }
                     this.rho[leaveRow] = pendingNode.attribute;
+                    this.rhoReverse[pendingNode.attribute] = leaveRow;
                     leaveRow += 1;
                 }
 
@@ -248,6 +256,21 @@ public class LewkoWatersLSSS {
                     }
                 }
             }
+        }
+
+        public Element isMatch(int[] userAttributes) {
+            // 如果用户的解密属性少于n，则一定不能解密
+            if (userAttributes.length < n)
+                return null;
+
+            // 目前假设属性集合是单调的
+            HashSet<Integer> I = new HashSet<>();
+            for (int i = 0; i < l; i++) {
+                if (Arrays.asList(userAttributes).contains(i)) {
+                    I.add(i);
+                }
+            }
+            return null;
         }
     }
 
