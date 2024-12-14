@@ -60,6 +60,7 @@ public class LewkoWatersLSSS {
     }
 
     // 案例2: https://blog.csdn.net/qq_36291381/article/details/109703720
+    // 目前这个案例当中存在致命的缺陷：A | D | E三个属性无法正确解密，因为矩阵会线性相关
     public static Node generateRoot2() {
         Node root = new Node(2, null);
         Node e = new Node(5); Node lay1Or = new Node(1, null); root.addChild(e, lay1Or);
