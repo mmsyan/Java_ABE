@@ -197,6 +197,7 @@ public class LewkoWatersLSSS {
         return result;
     }
 
+
     public int[][] computeSubReverseMatrix(int[] userAttributes) {
         Map<Integer, int[]> selectedRows = new HashMap<>();
         List<Integer> selectedIndices = new ArrayList<>();
@@ -218,52 +219,44 @@ public class LewkoWatersLSSS {
         }
 
         // 如果选中的行数超过n，尝试找到n行构成可逆矩阵
-        if (selectedIndices.size() >= n) {
-            List<Integer> finalIndices = new ArrayList<>();
-            boolean found = false;
-            for (int i = 0; i < selectedIndices.size(); i++) {
-                for (int j = i + 1; j < selectedIndices.size(); j++) {
-                    for (int k = j + 1; k < selectedIndices.size(); k++) {
-                        // 以此类推，直到找到n个不重复的索引
-                        if (finalIndices.size() == n - 1) {
-                            finalIndices.add(selectedIndices.get(k));
-                            break;
-                        }
-                        finalIndices.add(selectedIndices.get(j));
-                    }
-                    if (finalIndices.size() == n - 1) {
-                        finalIndices.add(selectedIndices.get(i));
-                        break;
-                    }
-                }
-                if (finalIndices.size() == n) {
-                    break;
-                }
-            }
+        List<List<Integer>> allCombinations = new ArrayList<>();
+        combine(allCombinations, new ArrayList<>(), selectedIndices, 0, n);
 
-            // 检查这n行是否构成可逆矩阵
+        for (List<Integer> indices : allCombinations) {
             int[][] subMatrix = new int[n][n];
             for (int i = 0; i < n; i++) {
-                subMatrix[i] = selectedRows.get(finalIndices.get(i));
+                subMatrix[i] = selectedRows.get(indices.get(i));
             }
             if (isInvertible(subMatrix)) {
-                subMatrixValidIndex = finalIndices.stream().mapToInt(i -> i).toArray();
+                subMatrixValidIndex = indices.stream().mapToInt(i -> i).toArray();
                 return subMatrix;
             }
         }
 
-        // 如果没有找到合适的n行，返回null
         subMatrixValidIndex = null;
-        return null;
+        return null; // 没有找到可逆子矩阵
+    }
+
+    private void combine(List<List<Integer>> combinations, List<Integer> current,
+                         List<Integer> selectedIndices, int start, int n) {
+        if (current.size() == n) {
+            combinations.add(new ArrayList<>(current));
+            return;
+        }
+        for (int i = start; i < selectedIndices.size(); i++) {
+            current.add(selectedIndices.get(i));
+            combine(combinations, current, selectedIndices, i + 1, n);
+            current.remove(current.size() - 1);
+        }
     }
 
     public static void main(String[] args) {
-        Node r = generateRoot1();
+        Node r = generateRoot2();
         LewkoWatersLSSS demo1 = new LewkoWatersLSSS(r, PairingFactory.getPairing("a.properties"));
         demo1.printLSSSMatrix();
-        int[][] result = demo1.computeSubReverseMatrix(new int[]{1,2,3});
+        int[][] result = demo1.computeSubReverseMatrix(new int[]{1,2,5});
         MatrixUtils.printMatrix(result);
-        System.out.println(demo1.subMatrixValidIndex);
+        System.out.println(Arrays.toString(demo1.subMatrixValidIndex));
     }
 
 
