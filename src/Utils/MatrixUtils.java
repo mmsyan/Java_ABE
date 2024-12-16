@@ -1,8 +1,8 @@
 package Utils;
 
-import org.apache.commons.math4.legacy.linear.Array2DRowRealMatrix;
-import org.apache.commons.math4.legacy.linear.LUDecomposition;
-import org.apache.commons.math4.legacy.linear.RealMatrix;
+import org.apache.commons.math4.legacy.linear.*;
+
+import java.util.Arrays;
 
 /**
  * 矩阵工具类，提供矩阵是否可逆的判断以及求逆矩阵的功能。
@@ -67,6 +67,10 @@ public class MatrixUtils {
             return null; // 矩阵不可逆
         }
     }
+
+
+
+
 
     /**
      * 测试矩阵是否可逆。
@@ -188,6 +192,6 @@ public class MatrixUtils {
      * @param args 命令行参数
      */
     public static void main(String[] args) {
-        testGetInvertible();
+
     }
 }

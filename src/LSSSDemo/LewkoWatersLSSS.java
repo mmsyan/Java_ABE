@@ -1,5 +1,6 @@
 package LSSSDemo;
 
+import Utils.GaussElementUtils;
 import Utils.MathUtils;
 import Utils.MatrixUtils;
 import it.unisa.dia.gas.jpbc.Element;
@@ -199,6 +200,77 @@ public class LewkoWatersLSSS {
     }
 
 
+    /**
+     * 计算能够使增广矩阵有解的子矩阵组合
+     * @param userAttributes 用户属性
+     * @return 能使得矩阵有解的组合对应的解向量
+     */
+    public Element[] computeSubWVector(int[] userAttributes) {
+        Map<Integer, Element[]> selectedRows = new HashMap<>();
+        List<Integer> selectedIndices = new ArrayList<>();
+
+        Element[][] ElementLSSSMatrix = new Element[LSSSMatrix.length][LSSSMatrix[0].length];
+        for (int i = 0; i < LSSSMatrix.length; i++) {
+            for (int j = 0; j < LSSSMatrix[0].length; j++) {
+                ElementLSSSMatrix[i][j] = bp.getZr().newElement(LSSSMatrix[i][j]).getImmutable();
+            }
+        }
+
+        // 遍历用户属性，检查是否在attributeRho中
+        for (int attr : userAttributes) {
+            for (int i = 0; i < attributeRho.length; i++) {
+                if (attributeRho[i] == attr) {
+                    selectedRows.put(i, ElementLSSSMatrix[i]);
+                    selectedIndices.add(i);
+                }
+            }
+        }
+
+        // 如果选中的行数少于1，直接返回null
+        if (selectedIndices.isEmpty()) {
+            return null;
+        }
+
+        // 生成所有可能的组合
+        List<List<Integer>> allCombinations = new ArrayList<>();
+        combine(allCombinations, new ArrayList<>(), selectedIndices, 0);
+
+        Element[] targetVector = new Element[selectedIndices.size()];
+        targetVector[0] = ElementLSSSMatrix[0][0].getField().newOneElement(); // 常数矩阵的第一元素为1
+        for (int i = 1; i < targetVector.length; i++) {
+            targetVector[i] = ElementLSSSMatrix[0][0].getField().newZeroElement(); // 其余元素为0
+        }
+
+        for (List<Integer> indices : allCombinations) {
+            int size = indices.size();
+            if (size > 0) { // 确保子矩阵至少有1行
+                Element[][] subMatrix = new Element[size][size];
+                Element[] subVector = new Element[size];
+
+                for (int i = 0; i < size; i++) {
+                    subMatrix[i] = selectedRows.get(indices.get(i));
+                    subVector[i] = targetVector[i];
+                }
+
+                Element[] wVector = GaussElementUtils.computeMatrixEquation(subMatrix, subVector);
+                if (wVector != null) {
+                    return wVector; // 返回第一个找到的有效解向量
+                }
+            }
+        }
+
+        return null; // 没有找到可逆子矩阵
+    }
+
+    private void combine(List<List<Integer>> combinations, List<Integer> current, List<Integer> selectedIndices, int start) {
+        combinations.add(new ArrayList<>(current)); // 添加当前组合
+        for (int i = start; i < selectedIndices.size(); i++) {
+            current.add(selectedIndices.get(i));
+            combine(combinations, current, selectedIndices, i + 1);
+            current.remove(current.size() - 1);
+        }
+    }
+
     public int[][] computeSubReverseMatrix(int[] userAttributes) {
         Map<Integer, int[]> selectedRows = new HashMap<>();
         List<Integer> selectedIndices = new ArrayList<>();
@@ -255,8 +327,8 @@ public class LewkoWatersLSSS {
         Node r = generateRoot2();
         LewkoWatersLSSS demo1 = new LewkoWatersLSSS(r, PairingFactory.getPairing("a.properties"));
         demo1.printLSSSMatrix();
-        int[][] result = demo1.computeSubReverseMatrix(new int[]{1,2,5});
-        MatrixUtils.printMatrix(result);
+        Element[] result = demo1.computeSubWVector(new int[]{1,2,5});
+        System.out.println(result);
         System.out.println(Arrays.toString(demo1.subMatrixValidIndex));
     }
 
