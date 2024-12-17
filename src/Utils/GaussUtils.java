@@ -8,15 +8,15 @@ public class GaussUtils {
      * @return 方程组的解，如果有多组解则返回任意一组，如果没有解则返回null
      */
     public static double[] computeMatrixEquation(int[][] M, int[] B) {
-        if (M.length == 0 || M[0].length == 0 || B.length != M.length) {
-            throw new IllegalArgumentException("Invalid input matrices");
+        int m = M.length;
+        int n = M[0].length;
+
+        if (B.length != m) {
+            throw new IllegalArgumentException("The length of B must match the number of rows in M.");
         }
 
-        int m = M.length; // 系数矩阵的行数
-        int n = M[0].length; // 系数矩阵的列数
-        double[][] augmentedMatrix = new double[m][n + 1]; // 增广矩阵
-
-        // 构建增广矩阵
+        // Create an augmented matrix
+        double[][] augmentedMatrix = new double[m][n + 1];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 augmentedMatrix[i][j] = M[i][j];
@@ -24,64 +24,78 @@ public class GaussUtils {
             augmentedMatrix[i][n] = B[i];
         }
 
-        // 进行高斯消元
-        int rank = 0; // 记录秩
-        for (int k = 0; k < n; k++) {
-            // 寻找最大的主元
-            int maxRow = rank;
-            for (int i = rank + 1; i < m; i++) {
-                if (Math.abs(augmentedMatrix[i][k]) > Math.abs(augmentedMatrix[maxRow][k])) {
-                    maxRow = i;
+        // Perform Gaussian elimination
+        for (int col = 0; col < Math.min(m, n); col++) {
+            // Find the pivot row
+            int pivotRow = col;
+            for (int row = col + 1; row < m; row++) {
+                if (Math.abs(augmentedMatrix[row][col]) > Math.abs(augmentedMatrix[pivotRow][col])) {
+                    pivotRow = row;
                 }
             }
 
-            // 如果该列全为0，跳过
-            if (Math.abs(augmentedMatrix[maxRow][k]) < 1e-9) {
+            // Swap the current row with the pivot row
+            double[] temp = augmentedMatrix[col];
+            augmentedMatrix[col] = augmentedMatrix[pivotRow];
+            augmentedMatrix[pivotRow] = temp;
+
+            // Check if the pivot is zero (no unique solution)
+            if (Math.abs(augmentedMatrix[col][col]) < 1e-9) {
                 continue;
             }
 
-            // 交换行，将最大主元移到对角线位置
-            double[] temp = augmentedMatrix[rank];
-            augmentedMatrix[rank] = augmentedMatrix[maxRow];
-            augmentedMatrix[maxRow] = temp;
+            // Normalize the pivot row
+            double pivot = augmentedMatrix[col][col];
+            for (int j = col; j < n + 1; j++) {
+                augmentedMatrix[col][j] /= pivot;
+            }
 
-            // 消元
-            for (int i = rank + 1; i < m; i++) {
-                double factor = augmentedMatrix[i][k] / augmentedMatrix[rank][k];
-                for (int j = k; j <= n; j++) {
-                    augmentedMatrix[i][j] -= factor * augmentedMatrix[rank][j];
+            // Eliminate the current column in all rows below the pivot
+            for (int row = col + 1; row < m; row++) {
+                double factor = augmentedMatrix[row][col];
+                for (int j = col; j < n + 1; j++) {
+                    augmentedMatrix[row][j] -= factor * augmentedMatrix[col][j];
                 }
             }
-
-            rank++;
         }
 
-        // 检查无解情况
-        for (int i = rank; i < m; i++) {
-            if (Math.abs(augmentedMatrix[i][n]) > 1e-9) {
-                return null; // 矛盾行，无解
+        // Back substitution
+        double[] solution = new double[n];
+        boolean[] freeVariables = new boolean[n];
+        for (int i = n - 1; i >= 0; i--) {
+            if (i >= m || Math.abs(augmentedMatrix[i][i]) < 1e-9) {
+                freeVariables[i] = true;
+                continue;
             }
-        }
-
-        // 检查是否存在多解
-        if (rank < n) {
-            throw new IllegalStateException("The system has infinite solutions.");
-        }
-
-        // 回代求解
-        double[] x = new double[n];
-        for (int i = rank - 1; i >= 0; i--) {
-            double sum = 0;
+            solution[i] = augmentedMatrix[i][n];
             for (int j = i + 1; j < n; j++) {
-                sum += augmentedMatrix[i][j] * x[j];
+                solution[i] -= augmentedMatrix[i][j] * solution[j];
             }
-            x[i] = (augmentedMatrix[i][n] - sum) / augmentedMatrix[i][i];
         }
 
-        return x;
+        // Check for consistency
+        for (int i = m - 1; i >= 0; i--) {
+            double sum = 0;
+            for (int j = 0; j < n; j++) {
+                sum += augmentedMatrix[i][j] * solution[j];
+            }
+            if (Math.abs(sum - augmentedMatrix[i][n]) > 1e-9) {
+                return null; // No solution
+            }
+        }
+
+        // Handle free variables (if any)
+        for (int i = 0; i < n; i++) {
+            if (freeVariables[i]) {
+                solution[i] = 0; // Arbitrarily set free variables to 0
+            }
+        }
+
+        return solution;
     }
 
-    public static void main(String[] args) {
+
+    public static void test1() {
         int[][] M = {
                 {2, 1},
                 {-3, -1},
@@ -98,5 +112,26 @@ public class GaussUtils {
         } else {
             System.out.println("--------------方程组无解---------------");
         }
+    }
+
+    public static void test2() {
+        int[][] M = {
+                {0, 0, 0, -1, 0},
+        };
+        int[] B = {1};
+
+        double[] solution = computeMatrixEquation(M, B);
+        if (solution != null) {
+            System.out.println("--------------方程组的根为---------------");
+            for (int i = 0; i < solution.length; i++) {
+                System.out.println("x" + (i + 1) + " = " + solution[i]);
+            }
+        } else {
+            System.out.println("--------------方程组无解---------------");
+        }
+    }
+
+    public static void main(String[] args) {
+        test1();
     }
 }

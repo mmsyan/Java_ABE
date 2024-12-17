@@ -12,8 +12,13 @@ public class GaussElementUtils {
      * @return 方程组的解，如果有多组解则返回任意一组，如果没有解则返回null
      */
     public static Element[] computeMatrixEquation(Element[][] M, Element[] B) {
-        if (M.length == 0 || M[0].length == 0 || B.length != M.length) {
-            throw new IllegalArgumentException("Invalid input matrices");
+        if (M.length == 0 || M[0].length == 0) {
+            throw new IllegalArgumentException("Coefficient matrix M must not be empty.");
+        }
+        if (B.length != M.length) {
+            throw new IllegalArgumentException(
+                    "Length of constant matrix B (" + B.length + ") must match the number of rows in M (" + M.length + ")."
+            );
         }
 
         int m = M.length; // 系数矩阵的行数
@@ -119,7 +124,21 @@ public class GaussElementUtils {
         }
     }
 
+    public static void test3() {
+        // 示例代码：调用computeMatrixEquation
+        // 创建Element矩阵和常量向量后测试即可
+        Pairing bp = PairingFactory.getPairing("a.properties");
+        Element[][] M = new Element[][]{
+                {bp.getZr().newElement(0), bp.getZr().newElement(0),bp.getZr().newElement(0),bp.getZr().newElement(-1),bp.getZr().newElement(0)}
+        };
+        Element[] B = new Element[] {bp.getZr().newElement(1)};
+        Element[] result = computeMatrixEquation(M, B);
+        for (Element r : result) {
+            System.out.println(r);
+        }
+    }
+
     public static void main(String[] args) {
-        test2();
+        test3();
     }
 }
