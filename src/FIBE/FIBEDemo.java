@@ -42,14 +42,15 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test2/ct.properties";
 
         System.out.println("\n测试案例2：");
-        FIBE anotherInstance = new FIBE(5, 2);
-        anotherInstance.setUp("a.properties");
-        anotherInstance.keyGeneration(new int[]{0, 2, 4}, skFilePath); // 为属性【0, 2, 4】的用户生成密钥
-        Element anotherM = anotherInstance.generateRandomPlainText(); // 生成随机明文
-        System.out.println("测试案例2中M 是 " + anotherM);
-        anotherInstance.encrypt(new int[]{1, 2, 3}, anotherM, ctFilePath); // 设置密文属性为【1, 2, 3】
-        Element anotherM_ = anotherInstance.decrypt(new int[]{0, 2, 4}, skFilePath, ctFilePath);
-        System.out.println("测试案例2中M_ 是 " + anotherM_);
+        FIBE fibeInstance = new FIBE(5, 2);
+        fibeInstance.setUp("a.properties");
+
+        try {
+            fibeInstance.keyGeneration(new int[]{0, 2, 4}, skFilePath); // 为属性【0, 2, 4】的用户生成密钥
+            fibeInstance.encrypt(new int[]{}, fibeInstance.generateRandomPlainText(), ctFilePath); // 空属性
+        } catch (Exception e) {
+            System.out.println("测试案例8发生错误: " + e.getMessage());
+        }
     }
 
     /**
@@ -64,11 +65,11 @@ public class FIBEDemo {
         System.out.println("\n测试案例3：");
         FIBE fibeInstance = new FIBE(20, 5);
         fibeInstance.setUp("a.properties");
-        fibeInstance.keyGeneration(new int[]{0, 5, 6, 10, 11, 15}, skFilePath); // 为属性【0, 5, 6, 10, 11, 15】的用户生成密钥
+        fibeInstance.keyGeneration(new int[]{1, 5, 6, 10, 11, 15}, skFilePath); // 为属性【1, 5, 6, 10, 11, 15】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
         System.out.println("测试案例3中M 是 " + M);
-        fibeInstance.encrypt(new int[]{0, 5, 6, 8, 11, 15, 16}, M, ctFilePath); // 设置密文属性为【0, 5, 6, 8, 11, 15, 16】
-        Element M_ = fibeInstance.decrypt(new int[]{0, 5, 6, 10, 11, 15}, skFilePath, ctFilePath);
+        fibeInstance.encrypt(new int[]{1, 5, 6, 8, 11, 15, 16}, M, ctFilePath); // 设置密文属性为【1, 5, 6, 8, 11, 15, 16】
+        Element M_ = fibeInstance.decrypt(new int[]{1, 5, 6, 10, 11, 15}, skFilePath, ctFilePath);
         System.out.println("测试案例3中M_ 是 " + M_);
     }
 
@@ -104,11 +105,11 @@ public class FIBEDemo {
         System.out.println("\n测试案例5：");
         FIBE fibeInstance = new FIBE(1, 1);
         fibeInstance.setUp("a.properties");
-        fibeInstance.keyGeneration(new int[]{0}, skFilePath); // 为属性【0】的用户生成密钥
+        fibeInstance.keyGeneration(new int[]{1}, skFilePath); // 为属性【1】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
         System.out.println("测试案例5中M 是 " + M);
-        fibeInstance.encrypt(new int[]{0}, M, ctFilePath); // 设置密文属性为【0】
-        Element M_ = fibeInstance.decrypt(new int[]{0}, skFilePath, ctFilePath);
+        fibeInstance.encrypt(new int[]{1}, M, ctFilePath); // 设置密文属性为【1】
+        Element M_ = fibeInstance.decrypt(new int[]{1}, skFilePath, ctFilePath);
         System.out.println("测试案例5中M_ 是 " + M_);
     }
 
@@ -124,11 +125,11 @@ public class FIBEDemo {
         System.out.println("\n测试案例6：");
         FIBE fibeInstance = new FIBE(11, 10);
         fibeInstance.setUp("a.properties");
-        fibeInstance.keyGeneration(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, skFilePath); // 为属性【0, 1, ..., 9】的用户生成密钥
+        fibeInstance.keyGeneration(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, skFilePath); // 为属性【0, 1, ..., 9】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
         System.out.println("测试案例6中M 是 " + M);
-        fibeInstance.encrypt(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, M, ctFilePath); // 设置密文属性为【0, 1, 2, ..., 10】
-        Element M_ = fibeInstance.decrypt(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, skFilePath, ctFilePath);
+        fibeInstance.encrypt(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, M, ctFilePath); // 设置密文属性为【0, 1, 2, ..., 10】
+        Element M_ = fibeInstance.decrypt(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, skFilePath, ctFilePath);
         System.out.println("测试案例6中M_ 是 " + M_);
     }
 

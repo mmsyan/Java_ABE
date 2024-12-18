@@ -38,8 +38,8 @@ public class FIBE {
     public FIBE(int u, int d) {
         this.universe = u;
         this.distance = d;
-        msk_ti = new Element[u]; // Zr类型元素数组
-        pk_Ti = new Element[u]; // G1类型元素数组
+        msk_ti = new Element[u+1]; // Zr类型元素数组。为了与论文适配，我们选择让属性从1开始到U结束，因此msk_ti刚好表示第i个主密钥
+        pk_Ti = new Element[u+1]; // G1类型元素数组。为了与论文适配，我们选择让属性从1开始到U结束，因此pk_ti刚好表示第i个公共参数
     }
 
     /**
@@ -50,8 +50,8 @@ public class FIBE {
         bp = PairingFactory.getPairing(pairingFilePath);
         g = bp.getG1().newRandomElement().getImmutable();
 
-        // 为每个属性生成主密钥和公钥
-        for (int i = 0; i < universe; i++) {
+        // 为每个属性生成主密钥和公钥。注意msk_ti[0]与pk_ti[0]是没有任何意义的。
+        for (int i = 1; i <= universe; i++) {
             msk_ti[i] = bp.getZr().newRandomElement().getImmutable(); // msk: t1 t2 …… tu <- Zr
             pk_Ti[i] = g.powZn(msk_ti[i]).getImmutable(); // PK: g^t1, g^t2, ……, g^tu ∈ G1
         }
@@ -189,8 +189,8 @@ public class FIBE {
         if (attributes == null || attributes.length == 0)
             throw new IllegalArgumentException("属性数组不能为空或无效");
         for (int a : attributes) {
-            if (a < 0) throw new IllegalArgumentException("属性元素不能小于0");
-            if (a >= this.universe) throw new IllegalArgumentException("属性元素不能大于或等于属性宇宙的大小");
+            if (a < 1) throw new IllegalArgumentException("属性元素不能小于等于0");
+            if (a > this.universe) throw new IllegalArgumentException("属性元素不能大于或等于属性宇宙的大小");
         }
     }
 }
