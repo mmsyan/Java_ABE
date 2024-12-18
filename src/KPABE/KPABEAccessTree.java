@@ -30,11 +30,7 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
             this.polynomial = new Element[threshold];
             this.threshold = threshold;
             this.attribute = -1;
-            if (children != null) {
-                this.children = children;
-            } else {
-                this.children = new ArrayList<>();
-            }
+            this.children = (children != null) ? children : new ArrayList<>();
         }
 
         // 判断节点是叶子节点还是非叶子节点
@@ -47,10 +43,10 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
             this.children.add(child);
         }
 
-        // 非叶子节点添加多个子节点
+        // 为非叶子节点添加多个子节点
         public void addChildren(Node[] newChildren) {
             if (newChildren != null && newChildren.length > 0) {
-                this.children.addAll(Arrays.asList(newChildren)); // 添加多个子节点                 // 更新子节点数量
+                this.children.addAll(Arrays.asList(newChildren));
             }
         }
 
@@ -70,12 +66,13 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
 
         // 如果当前节点不是叶子节点，首先给当前节点设置好多项式q(x)(注意多项式的常量是秘密值)
         n.polynomial = MathUtils.generateRandomPolynomial(n.threshold, n.polynomial[0], bp);
+
         // 然后对于当前节点的每一个叶子节点child，计算q(index(child))的多项式值作为child的秘密值
         for (int i = 0; i < n.children.size(); i++) {
             Node childNode = n.children.get(i);
             // 这里index(child)就是child在children数组的下标+1
             childNode.polynomial[0] = MathUtils.qx(n.polynomial, bp.getZr().newElement(i+1));
-            // 继续递归调研
+            // 继续递归生成秘密
             generatePolySecretHelper(childNode, bp);
         }
     }
@@ -85,50 +82,6 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         this.root.polynomial[0] = rootSecret;
         generatePolySecretHelper(this.root, bp);
     }
-
-    public void generateLeaveSequence() {
-        int sequenceNumber = 1;
-        for (KPABEAccessTree.Node n : this) {
-            if (n.isLeave()) {
-                n.leaveSequence = sequenceNumber;
-                sequenceNumber += 1;
-            }
-        }
-    }
-
-    // accessTree的层序遍历迭代器
-    @Override
-    public Iterator<Node> iterator() {
-        return new Iterator<Node>() {
-            private ArrayDeque<Node> queue = new ArrayDeque<>();
-            {
-                // 将根节点加入队列
-                if (root != null) {
-                    queue.addLast(root);
-                }
-            }
-
-            @Override
-            public boolean hasNext() {
-                return !queue.isEmpty();
-            }
-
-            @Override
-            public Node next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                // 获取并移除队列头部的节点
-                Node current = queue.removeFirst();
-                // 将当前节点的子节点按顺序加入队列
-                if (current.children != null) {
-                    queue.addAll(current.children);
-                }
-                return current;
-            }
-        };
-    }
-
 
     private Element decryptNodeHelper(Node n, int[] messageAttributes, Map<Integer, Element> Di, Map<Integer, Element> Ei, Pairing bp) {
         // 如果n是叶子节点
@@ -181,9 +134,54 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
         return decryptNodeHelper(root, messageAttributes, Di, Ei, bp);
     }
 
-    public static KPABEAccessTree getInstance1() {
-        Pairing bp = PairingFactory.getPairing("a.properties");
+    public void generateLeaveSequence() {
+        int sequenceNumber = 1;
+        for (KPABEAccessTree.Node n : this) {
+            if (n.isLeave()) {
+                n.leaveSequence = sequenceNumber;
+                sequenceNumber += 1;
+            }
+        }
+    }
 
+    // accessTree的层序遍历迭代器
+    @Override
+    public Iterator<Node> iterator() {
+        return new Iterator<>() {
+            private ArrayDeque<Node> queue = new ArrayDeque<>();
+
+            {
+                // 将根节点加入队列
+                if (root != null) {
+                    queue.addLast(root);
+                }
+            }
+
+            @Override
+            public boolean hasNext() {
+                return !queue.isEmpty();
+            }
+
+            @Override
+            public Node next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                // 获取并移除队列头部的节点
+                Node current = queue.removeFirst();
+                // 将当前节点的子节点按顺序加入队列
+                if (current.children != null) {
+                    queue.addAll(current.children);
+                }
+                return current;
+            }
+        };
+    }
+
+
+
+
+    public static KPABEAccessTree getInstance1() {
         Node[] nodes = new Node[7];
         nodes[0] = new Node(2,null);
         nodes[1] = new Node(1);
@@ -202,8 +200,6 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
     }
 
     public static KPABEAccessTree getInstance2() {
-        Pairing bp = PairingFactory.getPairing("a.properties");
-
         Node root = new Node(3,null);
         Node node1 = new Node(1, null);
         Node node2 = new Node(1,null);
@@ -220,8 +216,6 @@ public class KPABEAccessTree implements Iterable<KPABEAccessTree.Node> {
     }
 
     public static KPABEAccessTree getInstance3() {
-        Pairing bp = PairingFactory.getPairing("a.properties");
-
         Node root = new Node(3,null);
         Node node1 = new Node(1, null);
         Node node2 = new Node(1,null);
