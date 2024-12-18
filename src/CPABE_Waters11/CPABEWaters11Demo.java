@@ -1,7 +1,6 @@
 package CPABE_Waters11;
 
 import Utils.ConversionUtils;
-import Utils.MathUtils;
 import Utils.PropertiesUtils;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
@@ -18,7 +17,7 @@ public class CPABEWaters11Demo {
     private Element g; //G1
     private Element alpha; //Zr
     private Element a;
-    private Element eggalpha;  //Gt
+    private Element eggAlpha;  //Gt
     private Element ga; // G1
     private Element[] h;
 
@@ -31,7 +30,7 @@ public class CPABEWaters11Demo {
         this.g = bp.getG1().newRandomElement().getImmutable(); // g <- G1
         this.alpha = bp.getZr().newRandomElement().getImmutable(); // alpha <- Zr
         this.a = bp.getZr().newRandomElement().getImmutable(); // alpha <- Zr
-        this.eggalpha = bp.pairing(g, g).powZn(alpha).getImmutable(); // e(g, g)^alpha
+        this.eggAlpha = bp.pairing(g, g).powZn(alpha).getImmutable(); // e(g, g)^alpha
         this.ga = g.powZn(a).getImmutable();
         this.h = new Element[universe];
         for (int i = 0; i < universe; i++) {
@@ -66,7 +65,7 @@ public class CPABEWaters11Demo {
             v[i] = bp.getZr().newRandomElement().getImmutable();
         }
 
-        Element C = message.mul(eggalpha.powZn(v[0])); // C = M * (e(g,g)^alpha)^s
+        Element C = message.mul(eggAlpha.powZn(v[0])); // C = M * (e(g,g)^alpha)^s
         Element CPrime = g.powZn(v[0]); // C' = g^s
         ctProperties.setProperty("C", ConversionUtils.bytes2String(C.toBytes()));
         ctProperties.setProperty("CPrime", ConversionUtils.bytes2String(CPrime.toBytes()));

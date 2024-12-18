@@ -189,7 +189,7 @@ public class LewkoWatersLSSS {
 
     // 返回矩阵的第i行元素(以Element形式)
     public Element[] Mi(int index) {
-        if (index < 0 && index >= LSSSMatrix.length) {
+        if (index < 0 || index >= LSSSMatrix.length) {
             System.out.println("调用Mi函数时index出现故障");
         }
         Element[] result = new Element[LSSSMatrix[index].length];
