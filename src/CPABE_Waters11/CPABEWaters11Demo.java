@@ -56,7 +56,7 @@ public class CPABEWaters11Demo {
         PropertiesUtils.store(skProperties, skFilePath);
     }
 
-    public void encrypt(LewkoWatersLSSS.LewkoWatersLSSSMatrix messageMatrix, Element message, String ctFilePath) {
+    public void encrypt(CPABELewkoWatersLSSS messageMatrix, Element message, String ctFilePath) {
         Properties ctProperties = new Properties();
 
         // vector v = [s, y2, y3, ……, yn] <—— Zp
@@ -86,7 +86,7 @@ public class CPABEWaters11Demo {
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
-    public Element decrypt(LewkoWatersLSSS.LewkoWatersLSSSMatrix messageMatrix, int[] userAttributes, String skFilePath, String ctFilePath) {
+    public Element decrypt(CPABELewkoWatersLSSS messageMatrix, int[] userAttributes, String skFilePath, String ctFilePath) {
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
@@ -99,6 +99,7 @@ public class CPABEWaters11Demo {
         Element C = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CStr)).getImmutable();
         String CPrimeStr = ctProperties.getProperty("CPrime");
         Element CPrime = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CPrimeStr)).getImmutable();
+
         HashMap<Integer, Element> CiphertextCi = new HashMap<>();
         HashMap<Integer, Element> CiphertextDi = new HashMap<>();
         for (int i = 0; i < messageMatrix.l; i++) {
@@ -106,9 +107,14 @@ public class CPABEWaters11Demo {
             String DiStr = ctProperties.getProperty("Di"+i);
         }
 
-        Element eggAlphasRecover = messageMatrix.isMatch(userAttributes);
-        return C.div(eggAlphasRecover);
-
+        if (!messageMatrix.isSatisfied(userAttributes)) {
+            System.out.println("解密失败！属性策略不符合。");
+            return null;
+        }
+        else {
+            Element eggAlphaSRecover = null; // e(g,g)^(alpha*s)
+            return C.div(eggAlphaSRecover); // C = M*e(g,g)^(alpha*s) , M = C / eggAlphaSRecover
+        }
     }
 
 }

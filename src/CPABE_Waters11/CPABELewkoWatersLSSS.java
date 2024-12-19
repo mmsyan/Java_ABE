@@ -1,11 +1,11 @@
-package LSSSDemo;
+package CPABE_Waters11;
 
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 
 import java.util.*;
 
-public class LewkoWatersLSSS {
+public class CPABELewkoWatersLSSS {
     public static class Node {
         public int threshold; // 非叶子节点具有门限阈值(1表示OR，2表示AND);叶子节点的门限阈值置为-1;
         public int attribute; // 叶子节点具有属性值；非叶子节点的属性值置为-1
@@ -55,7 +55,7 @@ public class LewkoWatersLSSS {
     private Pairing bp; // 双线性对，因为LSSS矩阵当中可能会出现一些需要的运算
 
     // LewkoWaters方法初始化矩阵（输入为一个访问控制树和一个双线性对）
-    public LewkoWatersLSSS(Node root, Pairing bp) {
+    public CPABELewkoWatersLSSS(Node root, Pairing bp) {
         this.bp = bp;
         this.accessTree = root;
 
@@ -289,6 +289,10 @@ public class LewkoWatersLSSS {
             result[i] = bp.getZr().newElement(LSSSMatrix[index][i]).getImmutable();
         }
         return result;
+    }
+
+    public int rhoi(int i) {
+        return attributeRho[i];
     }
 
     // 打印 LSSS Matrix函数
