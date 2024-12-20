@@ -205,8 +205,8 @@ public class CPABELewkoWatersLSSS {
         for (int attr : userAttributes) {
             for (int i = 0; i < attributeRho.length; i++) {
                 if (attributeRho[i] == attr) {
-                    selectedRows.put(i, LSSSMatrix[i]);
                     I.add(i);
+                    selectedRows.put(i, LSSSMatrix[i]);
                 }
             }
         }
@@ -293,6 +293,21 @@ public class CPABELewkoWatersLSSS {
 
     public int rhoi(int i) {
         return attributeRho[i];
+    }
+
+    public Element recoverSecret(int[] userAttributes, Element CPrime, Element K, Element L, HashMap<Integer, Element> Ci, HashMap<Integer, Element> Di, HashMap<Integer, Element> Kx) {
+        Element eCPrimeK = bp.pairing(CPrime, K).getImmutable();
+        Element[] wVector = this.computeWVector(userAttributes);
+
+        Element result = bp.getGT().newOneElement().getImmutable();
+        for (int i = 0; i < this.I.size(); i++) {
+            int index = I.get(i);
+            Element CiL = bp.pairing(Ci.get(index), L).getImmutable();
+            Element DiKpi = bp.pairing(Di.get(index), Kx.get(rhoi(index))).powZn(wVector[i]).getImmutable();
+            result = result.mul(CiL).mul(DiKpi);
+        }
+
+        return eCPrimeK.div(result).getImmutable();
     }
 
     // 打印 LSSS Matrix函数

@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class CPABELewkoWatersLSSSDemo {
 
-    public static void testCase1() {
+    public static Node getTree1() {
         Node root = new CPABELewkoWatersLSSS.Node(2, null);
         Node lay1 = new CPABELewkoWatersLSSS.Node(2, null);
         Node lay2 = new CPABELewkoWatersLSSS.Node(1, null);
@@ -18,7 +18,11 @@ public class CPABELewkoWatersLSSSDemo {
         lay1.addChild(a, b);
         lay2.addChild(c, d);
         root.addChild(lay1, lay2);
+        return root;
+    }
 
+    public static void testCase1() {
+        Node root = getTree1();
         CPABELewkoWatersLSSS demo1 = new CPABELewkoWatersLSSS(root, PairingFactory.getPairing("a.properties"));
         demo1.printLSSSMatrix();
         System.out.println("{1} is not satisfied: " + demo1.isSatisfied(new int[]{1}));
@@ -33,8 +37,7 @@ public class CPABELewkoWatersLSSSDemo {
         System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 3, 4})));
     }
 
-    // 案例2: https://blog.csdn.net/qq_36291381/article/details/109703720
-    public static void testCase2() {
+    public static Node getTree2() {
         Node root = new CPABELewkoWatersLSSS.Node(2, null);
         Node e = new Node(5); Node lay1Or = new Node(1, null); root.addChild(e, lay1Or);
         Node lay2Or = new Node(1, null); Node lay2And = new Node(2, null);lay1Or.addChild(lay2Or, lay2And);
@@ -50,6 +53,12 @@ public class CPABELewkoWatersLSSSDemo {
         Node b2 = new Node(2); lay3Or1.addChild(a2, b2);
         Node c2 = new Node(3);
         Node d2 = new Node(4); lay3Or2.addChild(c2, d2);
+        return root;
+    }
+
+    // 案例2: https://blog.csdn.net/qq_36291381/article/details/109703720
+    public static void testCase2() {
+        Node root = getTree2();
 
         CPABELewkoWatersLSSS demo2 = new CPABELewkoWatersLSSS(root, PairingFactory.getPairing("a.properties"));
         demo2.printLSSSMatrix();
