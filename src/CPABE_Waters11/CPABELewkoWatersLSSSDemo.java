@@ -77,6 +77,6 @@ public class CPABELewkoWatersLSSSDemo {
     }
 
     public static void main(String[] args) {
-        testCase2();
+        testCase1();
     }
 }
