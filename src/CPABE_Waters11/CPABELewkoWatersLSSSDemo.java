@@ -32,9 +32,9 @@ public class CPABELewkoWatersLSSSDemo {
         System.out.println("{1, 2, 4} is satisfied: " + demo1.isSatisfied(new int[]{1, 2, 4}));
         System.out.println("{1, 2, 3, 4} is satisfied: " + demo1.isSatisfied(new int[]{1, 2, 3, 4}));
 
-        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 3})));
-        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 4})));
-        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 3, 4})));
+//        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 3})));
+//        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 4})));
+//        System.out.println(Arrays.toString(demo1.computeWVector(new int[]{1, 2, 3, 4})));
     }
 
     public static Node getTree2() {
@@ -71,9 +71,9 @@ public class CPABELewkoWatersLSSSDemo {
         System.out.println("{5, 1, 3} is satisfied: " + demo2.isSatisfied(new int[]{5, 1, 3}));
         System.out.println("{5, 1, 2, 3} is satisfied: " + demo2.isSatisfied(new int[]{5, 1, 2, 3}));
 
-        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 2})));
-        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 3})));
-        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 2, 3})));
+//        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 2})));
+//        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 3})));
+//        System.out.println(Arrays.toString(demo2.computeWVector(new int[]{5, 1, 2, 3})));
     }
 
     public static void main(String[] args) {

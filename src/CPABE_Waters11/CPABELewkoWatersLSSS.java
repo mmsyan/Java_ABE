@@ -51,7 +51,7 @@ public class CPABELewkoWatersLSSS {
     private Node accessTree; // 核心3：悄悄包含了一个访问控制树
     private List<Integer> I = new ArrayList<>(); // 用户属性对应的访问控制结构中的哪些行？I记录这些行的下标
     // 选择LSSSMatrix的对应行
-    Map<Integer, int[]> selectedRows = new HashMap<>();// 用户属性对应的访问控制结构中的哪些行？I记录这些行的具体内容
+    private Map<Integer, int[]> selectedRows = new LinkedHashMap<>();// 用户属性对应的访问控制结构中的哪些行？I记录这些行的具体内容
     private Pairing bp; // 双线性对，因为LSSS矩阵当中可能会出现一些需要的运算
 
     // LewkoWaters方法初始化矩阵（输入为一个访问控制树和一个双线性对）
@@ -150,40 +150,10 @@ public class CPABELewkoWatersLSSS {
         }
     }
 
-    // 判断访问控制树的节点是否满足给定的属性集
-    private boolean isSatisfiedHelper(int[] attributes, Node node) {
-        // 如果是叶子节点，检查其属性是否在给定的属性集内
-        if (node.threshold == -1) {
-            for (int attr : attributes) {
-                if (attr == node.attribute) {
-                    return true;  // 叶子节点的属性存在于给定的属性集合中
-                }
-            }
-            return false;  // 叶子节点的属性不存在于给定的属性集合中
-        }
 
-        // 非叶子节点的处理
-        int satisfiedCount = 0;  // 记录满足条件的子节点数量
-
-        // 遍历所有子节点，递归检查其是否满足
-        for (Node child : node.children) {
-            if (isSatisfiedHelper(attributes, child)) {
-                satisfiedCount++;
-            }
-
-            // 如果满足的子节点数量已经达到阈值，则可以停止检查其他子节点（短路优化）
-            if (satisfiedCount >= node.threshold) {
-                return true;
-            }
-        }
-
-        // 判断是否满足条件，具体取决于门限（threshold）的值
-        return satisfiedCount >= node.threshold;
-    }
     public boolean isSatisfied(int[] attributes) {
         return this.isSatisfiedHelper(attributes, accessTree);
     }
-
 
 
     /**
@@ -191,7 +161,7 @@ public class CPABELewkoWatersLSSS {
      * @param userAttributes 用户属性
      * @return 能使得矩阵有解的组合对应的解向量
      */
-    public Element[] computeWVector(int[] userAttributes) {
+    public Map<Integer, Element> computeWVector(int[] userAttributes) {
         this.I.clear();
         this.selectedRows.clear();
 
@@ -246,9 +216,9 @@ public class CPABELewkoWatersLSSS {
             // 检查线性组合是否等于目标向量 (1, 0, 0, ..., 0)
             if (isTargetVector(linearCombination)) {
                 // 如果是，返回对应的wElementVector
-                Element[] wElementVector = new Element[n];
+                Map<Integer, Element> wElementVector = new LinkedHashMap<>();
                 for (int i = 0; i < n; i++) {
-                    wElementVector[i] = bp.getZr().newElement(wIntegerVector[i]).getImmutable();
+                    wElementVector.put(I.get(i),bp.getZr().newElement(wIntegerVector[i]).getImmutable());
                 }
                 return wElementVector;
             }
@@ -258,6 +228,79 @@ public class CPABELewkoWatersLSSS {
 
         // 如果没有找到符合的解，返回null
         return null;
+    }
+
+
+    // 返回矩阵的第i行元素(以Element形式)
+    public Element[] Mi(int index) {
+        if (index < 0 || index >= LSSSMatrix.length) {
+            System.out.println("调用Mi函数时index出现故障");
+        }
+        Element[] result = new Element[LSSSMatrix[index].length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = bp.getZr().newElement(LSSSMatrix[index][i]).getImmutable();
+        }
+        return result;
+    }
+
+    public int rhoi(int i) {
+        return attributeRho[i];
+    }
+
+    public Element recoverSecret(int[] userAttributes, Element CPrime, Element K, Element L, HashMap<Integer, Element> Ci, HashMap<Integer, Element> Di, HashMap<Integer, Element> Kx) {
+        Element eCPrimeK = bp.pairing(CPrime, K).getImmutable();
+        Map<Integer, Element> wVector = this.computeWVector(userAttributes);
+
+        Element result = bp.getGT().newOneElement().getImmutable();
+        for (int i : I) {
+            Element CiL = bp.pairing(Ci.get(i), L).powZn(wVector.get(i)).getImmutable();
+            Element DiKpi = bp.pairing(Di.get(i), Kx.get(rhoi(i))).powZn(wVector.get(i)).getImmutable();
+            result = result.mul(CiL).mul(DiKpi);
+        }
+
+        return eCPrimeK.div(result).getImmutable();
+    }
+
+    // 打印 LSSS Matrix函数
+    public void printLSSSMatrix() {
+        for (int i = 0; i < this.LSSSMatrix.length; i++) { // 外层循环遍历行
+            System.out.print("attribute: " + this.attributeRho[i] + "   |   "); // 打印出属性
+            for (int j = 0; j < this.LSSSMatrix[i].length; j++) { // 内层循环遍历列
+                System.out.print(this.LSSSMatrix[i][j] + " "); // 打印当前元素
+            }
+            System.out.println(); // 每打印完一行后换行
+        }
+    }
+
+    // 判断访问控制树的节点是否满足给定的属性集
+    private boolean isSatisfiedHelper(int[] attributes, Node node) {
+        // 如果是叶子节点，检查其属性是否在给定的属性集内
+        if (node.threshold == -1) {
+            for (int attr : attributes) {
+                if (attr == node.attribute) {
+                    return true;  // 叶子节点的属性存在于给定的属性集合中
+                }
+            }
+            return false;  // 叶子节点的属性不存在于给定的属性集合中
+        }
+
+        // 非叶子节点的处理
+        int satisfiedCount = 0;  // 记录满足条件的子节点数量
+
+        // 遍历所有子节点，递归检查其是否满足
+        for (Node child : node.children) {
+            if (isSatisfiedHelper(attributes, child)) {
+                satisfiedCount++;
+            }
+
+            // 如果满足的子节点数量已经达到阈值，则可以停止检查其他子节点（短路优化）
+            if (satisfiedCount >= node.threshold) {
+                return true;
+            }
+        }
+
+        // 判断是否满足条件，具体取决于门限（threshold）的值
+        return satisfiedCount >= node.threshold;
     }
 
     /**
@@ -279,47 +322,6 @@ public class CPABELewkoWatersLSSS {
         return true;
     }
 
-    // 返回矩阵的第i行元素(以Element形式)
-    public Element[] Mi(int index) {
-        if (index < 0 || index >= LSSSMatrix.length) {
-            System.out.println("调用Mi函数时index出现故障");
-        }
-        Element[] result = new Element[LSSSMatrix[index].length];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = bp.getZr().newElement(LSSSMatrix[index][i]).getImmutable();
-        }
-        return result;
-    }
-
-    public int rhoi(int i) {
-        return attributeRho[i];
-    }
-
-    public Element recoverSecret(int[] userAttributes, Element CPrime, Element K, Element L, HashMap<Integer, Element> Ci, HashMap<Integer, Element> Di, HashMap<Integer, Element> Kx) {
-        Element eCPrimeK = bp.pairing(CPrime, K).getImmutable();
-        Element[] wVector = this.computeWVector(userAttributes);
-
-        Element result = bp.getGT().newOneElement().getImmutable();
-        for (int i = 0; i < this.I.size(); i++) {
-            int index = I.get(i);
-            Element CiL = bp.pairing(Ci.get(index), L).getImmutable();
-            Element DiKpi = bp.pairing(Di.get(index), Kx.get(rhoi(index))).powZn(wVector[i]).getImmutable();
-            result = result.mul(CiL).mul(DiKpi);
-        }
-
-        return eCPrimeK.div(result).getImmutable();
-    }
-
-    // 打印 LSSS Matrix函数
-    public void printLSSSMatrix() {
-        for (int i = 0; i < this.LSSSMatrix.length; i++) { // 外层循环遍历行
-            System.out.print("attribute: " + this.attributeRho[i] + "   |   "); // 打印出属性
-            for (int j = 0; j < this.LSSSMatrix[i].length; j++) { // 内层循环遍历列
-                System.out.print(this.LSSSMatrix[i][j] + " "); // 打印当前元素
-            }
-            System.out.println(); // 每打印完一行后换行
-        }
-    }
 
     public static void main(String[] args) {
 
