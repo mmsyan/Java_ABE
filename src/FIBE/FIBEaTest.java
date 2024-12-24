@@ -10,11 +10,11 @@ import it.unisa.dia.gas.jpbc.Element;
  * 完成时间: 2024-12-18
  * 参考文献: Fuzzy Identity-Based Encryption
  */
-public class FIBEaDemo {
+public class FIBEaTest {
 
     /**
      * 测试案例1：测试基本的FIBE加密解密功能
-     * 使用属性宇宙为【0, 1, 2, 3, 4, 5, 6, 7, 8, 9】以及容错距离为3的参数，演示生成密钥、加密和解密过程。
+     * 使用属性宇宙为【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】以及容错距离为3的参数，演示生成密钥、加密和解密过程。
      * 输入的用户属性为【1, 2, 3, 4】，密文属性为【2, 3, 4, 5】。
      */
     public static void testCase1() {
@@ -22,7 +22,7 @@ public class FIBEaDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test1/ct.properties";
 
         System.out.println("\n测试案例1：");
-        FIBEa fibeInstance = new FIBEa(10, 3); // 属性【0, 1, 2, 3, 4, 5, 6, 7, 8, 9】 容错距离：3
+        FIBEa fibeInstance = new FIBEa(10, 3); // 属性【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】 容错距离：3
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 2, 3, 4}, skFilePath); // 为属性为【1, 2, 3, 4】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -55,7 +55,7 @@ public class FIBEaDemo {
 
     /**
      * 测试案例3：测试更大的属性宇宙和不同的参数距离
-     * 使用属性宇宙为【0, 1, 2, ..., 19】以及容错距离为5的参数，演示加密和解密过程。
+     * 使用属性宇宙为【1, 2, ..., 19, 20】以及容错距离为5的参数，演示加密和解密过程。
      * 输入的用户属性为【0, 5, 6, 10, 11, 15】, 密文属性为【0, 5, 6, 8, 11, 15, 16】。
      */
     public static void testCase3() {

@@ -13,18 +13,18 @@ import java.util.Properties;
  * FIBE (Fuzzy Identity Based Encryption) 演示类
  * 该类展示了模糊属性加密方案的初始化、密钥生成、加密和解密过程。
  * Sahai, A., Waters, B. (2005). Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005. Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
- * 这个构造选自文章的第六节：Large Universe Construction
+ * 这个构造选自文章的第6节：Large Universe Construction
  *
  * 作者: mmsyan
- * 完成时间: 2024-12-18
+ * 完成时间: 2024-12-24
  * 参考文献: Fuzzy Identity-Based Encryption
  */
 public class FIBEb {
-    private final int n; // 大宇宙方案中的n表示允许的最大的明文属性集合大小/用户属性集合大小。
+    private final int n; // 大宇宙方案中的n表示允许的最大的明文属性集合大小 | 用户属性集合大小。
     private final int d; // 加密方案的容错距离，控制解密时要求的最小匹配度
     private Pairing bp;
     private Element g; // g ∈ G1
-    private Element y;
+    private Element y; // y ∈ Zr
     private Element g1; // g1 = g^y
     private Element g2; // g2 ∈ G1
     private Element[] pk_Ti; // G1
@@ -46,11 +46,11 @@ public class FIBEb {
         g1 = g.powZn(y).getImmutable();
         g2 = bp.getG1().newRandomElement().getImmutable();
 
-        // 为每个属性生成主密钥和公钥。注意msk_ti[0]与pk_ti[0]是没有任何意义的。
+        // 为每个属性生成公钥。注意pk_ti[0]是没有任何意义的。
         for (int i = 1; i < this.pk_Ti.length; i++) {
             pk_Ti[i] = bp.getG1().newRandomElement().getImmutable(); // pk: t_1 t_2 …… t_n, t_n+1 <- G1
         }
-        System.out.println("已成功初始化，属性集合上限为 " + this.n + "，容错距离为 " + this.d);
+        System.out.println("已成功初始化，属性集合的大小上限为 " + this.n + "，容错距离为 " + this.d);
     }
 
     /**
@@ -206,7 +206,7 @@ public class FIBEb {
     }
 
     /**
-     * 检查属性数组的合法性，确保所有属性都在有效范围内。
+     * 检查属性数组的合法性，确保所有属性都在有效范围内，以及属性集合的大小不能超过n
      * @param attributes 属性数组
      */
     private void checkAttributeSet(int[] attributes) {

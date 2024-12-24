@@ -13,7 +13,7 @@ import java.util.Properties;
  * FIBE (Fuzzy Identity Based Encryption) 演示类
  * 该类展示了模糊属性加密方案的初始化、密钥生成、加密和解密过程。
  * Sahai, A., Waters, B. (2005). Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005. Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
- * 这个构造选自文章的第四节：Our Construction
+ * 这个构造选自文章的第4节：Our Construction
  *
  * 作者: mmsyan
  * 完成时间: 2024-12-18
@@ -34,7 +34,7 @@ public class FIBEa {
 
     /**
      * 构造函数，用于初始化FIBEDemo类
-     * @param u 属性宇宙的大小，u代表属性可以选取[0, 1, …… , u-1]
+     * @param u 属性宇宙的大小，u代表属性可以选取[1, 2, …… , u-1, u]
      * @param d 加密方案的容错距离，用户属性和密文属性的交集不小于容错距离时可以成功解密
      */
     public FIBEa(int u, int d) {
@@ -192,7 +192,7 @@ public class FIBEa {
             throw new IllegalArgumentException("属性数组不能为空或无效");
         for (int a : attributes) {
             if (a < 1) throw new IllegalArgumentException("属性元素不能小于等于0");
-            if (a > this.universe) throw new IllegalArgumentException("属性元素不能大于或等于属性宇宙的大小");
+            if (a > this.universe) throw new IllegalArgumentException("属性元素不能超过属性宇宙的范围");
         }
     }
 }
