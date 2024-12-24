@@ -206,7 +206,7 @@ public class FIBEb {
     }
 
     /**
-     * 检查属性数组的合法性，确保所有属性都在有效范围内，以及属性集合的大小不能超过n
+     * 检查属性数组的合法性，确保属性集合的大小不能超过n
      * @param attributes 属性数组
      */
     private void checkAttributeSet(int[] attributes) {

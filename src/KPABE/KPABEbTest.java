@@ -206,11 +206,34 @@ public class KPABEbTest {
         System.out.println("M_ 是 " + M_);
     }
 
+    public static void testCase10() {
+        //测试文件路径
+        String skFilePath = "src/KPABE/KPABEbFile/test10/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test10/ct.properties";
+        System.out.println("\n测试案例10：");
+
+        // 初始化操作，设置属性集合最大值为10
+        KPABEb kpabeInstance = new KPABEb(10);
+        kpabeInstance.setUp("a.properties");
+
+        // 随机选取Gt上的元素作为消息并打印出来
+        Element M = kpabeInstance.generateRandomPlainText();
+        System.out.println("M 是 " + M);
+        kpabeInstance.encrypt(new int[]{1, 2}, M, ctFilePath);
+
+        // 用户输入自己属性对应的访问控制树来生成密钥
+        AccessTreeKPABE tree1 = AccessTreeKPABE.getInstance5();
+        kpabeInstance.keyGeneration(tree1, skFilePath);
+
+        Element M_ = kpabeInstance.decrypt(tree1, skFilePath, ctFilePath);
+        System.out.println("M_ 是 " + M_);
+    }
+
 
 
     public static void main(String[] args) {
-        testCase1();
-        testCase2();
+        testCase10();
+
 
     }
 }

@@ -153,8 +153,8 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
                 if (n.attribute == m) {
                     //如果被包含，返回e(Dx, E'')/e(Rx, Ei)
                     Element DzEpp = bp.pairing(Dx.get(n.leafID), EPrimePrime).getImmutable();
-                    Element RxEi = bp.pairing(Rx.get(n.leafID),Ei.get(n.attribute)).getImmutable();
-                    return (DzEpp).div(RxEi);
+                    Element RxEi = bp.pairing(Rx.get(n.leafID), Ei.get(n.attribute)).getImmutable();
+                    return (DzEpp).div(RxEi).getImmutable();
                 }
             }
             return null;
@@ -298,6 +298,15 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
     public static AccessTreeKPABE getInstance4() {
         Node root = new Node(4,null);
         root.addChildren(new Node(1), new Node(1), new Node(1), new Node(1));
+
+        AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
+        accesstree.generateLeaveSequence();
+        return accesstree;
+    }
+
+    public static AccessTreeKPABE getInstance5() {
+        Node root = new Node(2,null);
+        root.addChildren(new Node(1), new Node(2));
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
         accesstree.generateLeaveSequence();

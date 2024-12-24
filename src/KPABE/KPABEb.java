@@ -53,7 +53,7 @@ public class KPABEb {
 
         // 为每个属性生成公钥。注意pk_ti[0]是没有任何意义的。
         for (int i = 1; i < pk_ti.length; i++) {
-            pk_ti[i] = bp.getG1().newRandomElement().getImmutable(); // msk: t1 t2 …… tn tn+1 <- G1
+            pk_ti[i] = bp.getG1().newRandomElement().getImmutable(); // PK: t1 t2 …… tn tn+1 <- G1
         }
         msk_y = bp.getZr().newRandomElement().getImmutable(); // msk: y <- Zr
         System.out.println("已成功初始化，属性集合的大小上限为 " + this.n);
@@ -71,11 +71,14 @@ public class KPABEb {
         Properties ctProperties = new Properties();
         ctProperties.setProperty("Message Attributes w' ", ConversionUtils.intArray2String(messageAttributes));
 
-        // 随机生成一个元素s用于加密
+        // 随机生成一个元素s <- Zr用于加密
         Element s = bp.getZr().newRandomElement().getImmutable();
 
         // 计算加密后的密文组件 E' = M * e(g1, g2)^s
-        Element EPrime = message.mul(bp.pairing(g1, g2).powZn(s)).getImmutable();
+        Element g1g2s = bp.pairing(g1, g2).powZn(s).getImmutable();
+        System.out.println("解密得到的g1g2s是"+g1g2s);
+        Element EPrime = message.mul(g1g2s).getImmutable();
+        System.out.println("加密得到的E'是"+EPrime);
         ctProperties.setProperty("E' ", ConversionUtils.bytes2String(EPrime.toBytes()));
 
         // 计算加密后的密文组件 E'' = g^s
@@ -107,9 +110,8 @@ public class KPABEb {
         // 为用户访问控制树的每个叶子节点x生成对应的Dx和Rx(不是跟着属性i走！)
         for (AccessTreeKPABE.Node n : userAttributes) {
             if (n.isLeave()) {
-                Element rx = bp.getZr().newRandomElement().getImmutable();
-                Element qx0 = MathUtils.qx(n.polynomial, bp.getZr().newZeroElement()
-                );
+                Element rx = bp.getZr().newRandomElement().getImmutable(); // rx <- Zr
+                Element qx0 = MathUtils.qx(n.polynomial, bp.getZr().newZeroElement().getImmutable());
 
                 // for each leaf node x: Dx = (g2^(qx0))*(T(i)^rx) where i = attr(x)
                 Element Dx = (g2.powZn(qx0)).mul(T(n.attribute).powZn(rx));
@@ -145,6 +147,7 @@ public class KPABEb {
         HashMap<Integer, Element> ciphertextEi = new HashMap<>();
         HashMap<Integer, Element> secretKeyDx = new HashMap<>();
         HashMap<Integer, Element> secretKeyRx = new HashMap<>();
+
         for (int i : messageAttributes) {
             String EiStr = ctProperties.getProperty("E" + i);
             Element Ei = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(EiStr)).getImmutable();
@@ -165,6 +168,9 @@ public class KPABEb {
 
         // 调用decryptNode(E, D, root)得到Y^s
         Element Ys = userAttributes.decryptNodeB(messageAttributes, secretKeyDx, secretKeyRx, ciphertextEi, EPrimePrime, bp);
+        System.out.println("加载得到的E'是"+EPrime);
+        System.out.println("解密得到的Ys是"+Ys);
+
         if (Ys != null) {
             System.out.println("密文设置的属性和用户属性访问控制树匹配，解密成功！");
             return EPrime.div(Ys);
@@ -183,6 +189,8 @@ public class KPABEb {
         return this.bp.getGT().newRandomElement().getImmutable();
     }
 
+
+    // Define a function T as
     private Element T(int x) {
         Element xElement = bp.getZr().newElement(x).getImmutable();
         Element xn = xElement.powZn(bp.getZr().newElement(n)).getImmutable();
@@ -202,16 +210,14 @@ public class KPABEb {
     }
 
     /**
-     * 检查属性数组的合法性，确保所有属性都在有效范围内。
+     * 检查属性数组的合法性，确保属性集合的大小不能超过n
      * @param attributes 属性数组
      */
     private void checkAttributeSet(int[] attributes) {
         if (attributes == null || attributes.length == 0)
-            throw new IllegalArgumentException("属性数组不能为空或无效");
-        for (int a : attributes) {
-            if (a < 1) throw new IllegalArgumentException("属性元素不能小于等于0");
-            if (a > this.n) throw new IllegalArgumentException("属性元素不能超过属性宇宙的范围");
-        }
+            throw new IllegalArgumentException("属性集合不能无效或者是空集");
+        if (attributes.length > n)
+            throw new IllegalArgumentException("属性集合大小不能超过"+n);
     }
 
 }
