@@ -10,7 +10,7 @@ import it.unisa.dia.gas.jpbc.Element;
  * 完成时间: 2024-12-18
  * 参考文献: Fuzzy Identity-Based Encryption
  */
-public class FIBEDemo {
+public class FIBEaDemo {
 
     /**
      * 测试案例1：测试基本的FIBE加密解密功能
@@ -22,7 +22,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test1/ct.properties";
 
         System.out.println("\n测试案例1：");
-        FIBE fibeInstance = new FIBE(10, 3); // 属性【0, 1, 2, 3, 4, 5, 6, 7, 8, 9】 容错距离：3
+        FIBEa fibeInstance = new FIBEa(10, 3); // 属性【0, 1, 2, 3, 4, 5, 6, 7, 8, 9】 容错距离：3
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 2, 3, 4}, skFilePath); // 为属性为【1, 2, 3, 4】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -42,14 +42,14 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test2/ct.properties";
 
         System.out.println("\n测试案例2：");
-        FIBE fibeInstance = new FIBE(5, 2);
+        FIBEa fibeInstance = new FIBEa(5, 2);
         fibeInstance.setUp("a.properties");
 
         try {
             fibeInstance.keyGeneration(new int[]{0, 2, 4}, skFilePath); // 为属性【0, 2, 4】的用户生成密钥
             fibeInstance.encrypt(new int[]{}, fibeInstance.generateRandomPlainText(), ctFilePath); // 空属性
         } catch (Exception e) {
-            System.out.println("测试案例8发生错误: " + e.getMessage());
+            System.out.println("测试案例2发生错误: " + e.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test3/ct.properties";
 
         System.out.println("\n测试案例3：");
-        FIBE fibeInstance = new FIBE(20, 5);
+        FIBEa fibeInstance = new FIBEa(20, 5);
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 5, 6, 10, 11, 15}, skFilePath); // 为属性【1, 5, 6, 10, 11, 15】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -83,7 +83,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test4/ct.properties";
 
         System.out.println("\n测试案例4：");
-        FIBE fibeInstance = new FIBE(11, 3);
+        FIBEa fibeInstance = new FIBEa(11, 3);
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 3, 6, 9}, skFilePath); // 为属性【1, 3, 6, 9】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -103,7 +103,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test5/ct.properties";
 
         System.out.println("\n测试案例5：");
-        FIBE fibeInstance = new FIBE(1, 1);
+        FIBEa fibeInstance = new FIBEa(1, 1);
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1}, skFilePath); // 为属性【1】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -123,7 +123,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test6/ct.properties";
 
         System.out.println("\n测试案例6：");
-        FIBE fibeInstance = new FIBE(11, 10);
+        FIBEa fibeInstance = new FIBEa(11, 10);
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, skFilePath); // 为属性【0, 1, ..., 9】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -142,7 +142,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test7/ct.properties";
 
         System.out.println("\n测试案例7：");
-        FIBE fibeInstance = new FIBE(10, 3);
+        FIBEa fibeInstance = new FIBEa(10, 3);
         fibeInstance.setUp("a.properties");
         fibeInstance.keyGeneration(new int[]{1, 3, 5}, skFilePath); // 为属性【1, 3, 5】的用户生成密钥
         Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
@@ -161,7 +161,7 @@ public class FIBEDemo {
         String ctFilePath = "src/FIBE/FIBEFile/test8/ct.properties";
 
         System.out.println("\n测试案例8：");
-        FIBE fibeInstance = new FIBE(0, 0); // 属性宇宙大小为0
+        FIBEa fibeInstance = new FIBEa(0, 0); // 属性宇宙大小为0
         fibeInstance.setUp("a.properties");
         // 这里无法生成密钥或进行加密解密，主要是测试是否能正确处理这种极端情况
         try {
@@ -173,7 +173,7 @@ public class FIBEDemo {
     }
 
     /**
-     * 主方法，用于演示FIBE加密方案
+     * 主方法，用于演示FIBE section4 加密方案 Our Construction
      * @param args 命令行参数
      * @throws Exception 如果在加密或解密过程中发生错误
      */

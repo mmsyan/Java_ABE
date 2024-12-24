@@ -2,13 +2,15 @@
 
 Author:  mmsyan
 
-Date: 2024-12-20
+Date: 2024-12-24
 
 Currently, we have implemented the following schemes:
 
 - BLS 
 - IBE (Identity Based Encryption)
-- FIBE (Fuzzy Identity Based Encryption)
+- [Fuzzy Identity-Based Encryption](https://link.springer.com/chapter/10.1007/11426639_27)
+  - section4  Our Construction : FIBE.FIBEa
+  - section6  Large Universe Construction : FIBE.FIBEb
 - KPABE (Key Policy Attribute Based Encryption)
 - CPABE (Ciphertext Policy Attribute Based Encryption)
 - Partial implementation of EH-CPABE
