@@ -10,7 +10,7 @@ public class KPABEbTest {
         String ctFilePath = "src/KPABE/KPABEbFile/test1/ct.properties";
         System.out.println("\n测试案例1：");
 
-        // 初始化操作，设置属性宇宙为【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】
+        // 初始化操作，设置属性集合大小上限为10
         KPABEb kpabeInstance = new KPABEb(10);
         kpabeInstance.setUp("a.properties");
 
@@ -33,7 +33,7 @@ public class KPABEbTest {
         String ctFilePath = "src/KPABE/KPABEbFile/test2/ct.properties";
         System.out.println("\n测试案例2：");
 
-        // 初始化操作，设置属性宇宙为【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】
+        // 初始化操作，设置属性集合大小上限为10
         KPABEb kpabeInstance = new KPABEb(10);
         kpabeInstance.setUp("a.properties");
 
@@ -52,11 +52,11 @@ public class KPABEbTest {
 
     public static void testCase3() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test3/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test3/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test3/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test3/ct.properties";
         System.out.println("\n测试案例3：");
 
-        // 初始化操作，设置属性宇宙为【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】
+        // 初始化操作，设置属性集合大小上限为10
         KPABEa kpabeInstance = new KPABEa(10);
         kpabeInstance.setUp("a.properties");
 
@@ -75,11 +75,11 @@ public class KPABEbTest {
 
     public static void testCase4() { // 无法通过
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test4/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test4/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test4/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test4/ct.properties";
         System.out.println("\n测试案例4：");
 
-        // 初始化操作，设置属性宇宙为【1, 2, 3, 4, 5, 6, 7, 8, 9, 10】
+        // 初始化操作，设置属性集合大小上限为10
         KPABEa kpabeInstance = new KPABEa(10);
         kpabeInstance.setUp("a.properties");
 
@@ -98,10 +98,10 @@ public class KPABEbTest {
 
     public static void testCase5() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test5/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test5/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test5/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test5/ct.properties";
         System.out.println("\n测试案例5：");
-        // 初始化操作，设置属性上限为10
+        // 初始化操作，设置属性上限为20
         KPABEa kpabeInstance = new KPABEa(20);
         kpabeInstance.setUp("a.properties");
 
@@ -120,10 +120,10 @@ public class KPABEbTest {
 
     public static void testCase6() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test6/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test6/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test6/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test6/ct.properties";
         System.out.println("\n测试案例6：");
-        // 初始化操作，设置属性上限为10
+        // 初始化操作，设置属性集合大小上限为20
         KPABEa kpabeInstance = new KPABEa(20);
         kpabeInstance.setUp("a.properties");
 
@@ -142,8 +142,8 @@ public class KPABEbTest {
 
     public static void testCase7() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test7/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test7/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test7/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test7/ct.properties";
         System.out.println("\n测试案例7：");
         // 初始化操作，设置属性上限为10
         KPABEa kpabeInstance = new KPABEa(20);
@@ -164,8 +164,8 @@ public class KPABEbTest {
 
     public static void testCase8() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test8/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test8/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test8/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test8/ct.properties";
         System.out.println("\n测试案例8：");
         // 初始化操作，设置属性上限为10
         KPABEa kpabeInstance = new KPABEa(20);
@@ -186,8 +186,8 @@ public class KPABEbTest {
 
     public static void testCase9() {
         //测试文件路径
-        String skFilePath = "src/KPABE/KPABEaFile/test9/sk.properties";
-        String ctFilePath = "src/KPABE/KPABEaFile/test9/ct.properties";
+        String skFilePath = "src/KPABE/KPABEbFile/test9/sk.properties";
+        String ctFilePath = "src/KPABE/KPABEbFile/test9/ct.properties";
         System.out.println("\n测试案例9：");
         // 初始化操作，设置属性上限为10
         KPABEa kpabeInstance = new KPABEa(20);
@@ -232,6 +232,15 @@ public class KPABEbTest {
 
 
     public static void main(String[] args) {
+        testCase1();
+        testCase2();
+        testCase3();
+        testCase4();
+        testCase5();
+        testCase6();
+        testCase7();
+        testCase8();
+        testCase9();
         testCase10();
 
 

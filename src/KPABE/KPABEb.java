@@ -17,7 +17,7 @@ import java.util.Properties;
  * 这个构造选自文章的第5节：Large Universe Construction
  *
  * 作者: mmsyan
- * 完成时间: 2024-12-24
+ * 完成时间: 2024-12-25
  * 参考文献: Attribute-based encryption for fine-grained access control of encrypted data
  */
 public class KPABEb {
@@ -55,7 +55,6 @@ public class KPABEb {
         for (int i = 1; i < pk_ti.length; i++) {
             pk_ti[i] = bp.getG1().newRandomElement().getImmutable(); // PK: t1 t2 …… tn tn+1 <- G1
         }
-        msk_y = bp.getZr().newRandomElement().getImmutable(); // msk: y <- Zr
         System.out.println("已成功初始化，属性集合的大小上限为 " + this.n);
     }
 
@@ -76,9 +75,7 @@ public class KPABEb {
 
         // 计算加密后的密文组件 E' = M * e(g1, g2)^s
         Element g1g2s = bp.pairing(g1, g2).powZn(s).getImmutable();
-        System.out.println("解密得到的g1g2s是"+g1g2s);
         Element EPrime = message.mul(g1g2s).getImmutable();
-        System.out.println("加密得到的E'是"+EPrime);
         ctProperties.setProperty("E' ", ConversionUtils.bytes2String(EPrime.toBytes()));
 
         // 计算加密后的密文组件 E'' = g^s
@@ -168,8 +165,6 @@ public class KPABEb {
 
         // 调用decryptNode(E, D, root)得到Y^s
         Element Ys = userAttributes.decryptNodeB(messageAttributes, secretKeyDx, secretKeyRx, ciphertextEi, EPrimePrime, bp);
-        System.out.println("加载得到的E'是"+EPrime);
-        System.out.println("解密得到的Ys是"+Ys);
 
         if (Ys != null) {
             System.out.println("密文设置的属性和用户属性访问控制树匹配，解密成功！");
