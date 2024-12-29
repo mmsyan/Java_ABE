@@ -3,9 +3,7 @@ package CPABE_Waters11;
 import CPABE_Waters11.CPABELewkoWatersLSSS.*;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
-import java.util.Arrays;
-
-public class CPABELewkoWatersLSSSDemo {
+public class CPABELewkoWatersLSSSTest {
 
     public static Node getTree1() {
         Node root = new CPABELewkoWatersLSSS.Node(2, null);

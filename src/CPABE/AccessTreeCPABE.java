@@ -7,7 +7,7 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
 import java.util.*;
 
-public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
+public class AccessTreeCPABE implements Iterable<AccessTreeCPABE.Node> {
 
     public static class Node {
 
@@ -15,7 +15,7 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
         public int threshold; // 非叶子节点具有门限阈值；叶子节点的门限阈值置为-1
         public int attribute; // 叶子节点具有属性值；非叶子节点的属性值置为-1
         public List<Node> children; // 非叶子节点具有子节点，以列表维护。注意论文当中的index(child)代表child在children当中的下标+1
-        public int leaveSequence; // 叶子节点需要有一个编号
+        public int leafID; // 叶子节点需要有一个编号
 
         // 对于叶子节点进行初始化操作：提供叶子节点所对应的属性
         public Node(int attribute) {
@@ -29,12 +29,8 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
             this.polynomial = new Element[threshold];
             this.threshold = threshold;
             this.attribute = -1;
-            this.leaveSequence = -1;
-            if (children != null) {
-                this.children = children;
-            } else {
-                this.children = new ArrayList<>();
-            }
+            this.leafID = -1;
+            this.children = (children != null) ? children : new ArrayList<>();
         }
 
         // 判断节点是叶子节点还是非叶子节点
@@ -47,10 +43,12 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
             this.children.add(child);
         }
 
-        // 非叶子节点添加多个子节点
-        public void addChildren(Node[] newChildren) {
+        /**
+         * 为非叶子节点添加多个子节点。
+         */
+        public void addChildren(Node... newChildren) {
             if (newChildren != null && newChildren.length > 0) {
-                this.children.addAll(Arrays.asList(newChildren)); // 添加多个子节点                 // 更新子节点数量
+                this.children.addAll(Arrays.asList(newChildren));
             }
         }
 
@@ -59,8 +57,32 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
     // accessTree：包装好根节点
     public Node root;
 
-    public CPABEAccessTree(Node root) {
+    public AccessTreeCPABE(Node root) {
         this.root = root;
+    }
+
+    // 密钥分发阶段，自顶向下配置各节点的秘密值和多项式，注意需要提供根节点的秘密值
+    public void generatePolySecret(Pairing bp, Element rootSecret) {
+        // 设置根节点的秘密：秘密值 = 根节点多项式的常数项系数 = 根节点多项式在x=0处的取值
+        this.root.polynomial[0] = rootSecret;
+        generatePolySecretHelper(this.root, bp);
+    }
+
+    public Element decryptNode(int[] messageAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy, Map<Integer, Element> CyPrime,Pairing bp) {
+        return decryptNodeHelper(root, messageAttributes, Dj, DjPrime, Cy, CyPrime, bp);
+    }
+
+    /**
+     * 生成叶子节点的编号序列。
+     */
+    public void generateLeafID() {
+        int sequenceNumber = 1;
+        for (Node n : this) {
+            if (n.isLeave()) {
+                n.leafID = sequenceNumber;
+                sequenceNumber += 1;
+            }
+        }
     }
 
     // 密钥分发阶段，自顶向下配置各节点的秘密值和多项式。每次操作都是设置当前节点的叶子节点，注意根节点一开始就要提供
@@ -79,12 +101,7 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
             generatePolySecretHelper(childNode, bp);
         }
     }
-     // 密钥分发阶段，自顶向下配置各节点的秘密值和多项式，注意需要提供根节点的秘密值
-    public void generatePolySecret(Pairing bp, Element rootSecret) {
-        // 设置根节点的秘密：秘密值 = 根节点多项式的常数项系数 = 根节点多项式在x=0处的取值
-        this.root.polynomial[0] = rootSecret;
-        generatePolySecretHelper(this.root, bp);
-    }
+
 
     // accessTree的层序遍历迭代器
     @Override
@@ -127,8 +144,8 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
             for (int u : userAttributes) {
                 if (n.attribute == u) {
                     //如果被包含，返回e(Di, Cx)/e(Di', Cx')
-                    Element e_Di_Cx = bp.pairing(Dj.get(n.attribute), Cy.get(n.leaveSequence)).getImmutable();
-                    Element e_DiPrime_CxPrime = bp.pairing(DjPrime.get(n.attribute), CyPrime.get(n.leaveSequence)).getImmutable();
+                    Element e_Di_Cx = bp.pairing(Dj.get(n.attribute), Cy.get(n.leafID)).getImmutable();
+                    Element e_DiPrime_CxPrime = bp.pairing(DjPrime.get(n.attribute), CyPrime.get(n.leafID)).getImmutable();
                     return e_Di_Cx.div(e_DiPrime_CxPrime).getImmutable();
                 }
             }
@@ -168,67 +185,55 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
         return null;
     }
 
-    public Element decryptNode(int[] messageAttributes, Map<Integer, Element> Dj , Map<Integer, Element> DjPrime, Map<Integer, Element> Cy, Map<Integer, Element> CyPrime,Pairing bp) {
-        return decryptNodeHelper(root, messageAttributes, Dj, DjPrime, Cy, CyPrime, bp);
-    }
 
-    public void generateLeaveSequence() {
-        int sequenceNumber = 1;
-        for (Node n : this) {
-            if (n.isLeave()) {
-                n.leaveSequence = sequenceNumber;
-                sequenceNumber += 1;
-            }
-        }
-    }
 
-    public static CPABEAccessTree getInstance1() {
+    public static AccessTreeCPABE getInstance1() {
         Node[] nodes = new Node[7];
         nodes[0] = new Node(2,null);
         nodes[1] = new Node(1);
         nodes[2] = new Node(2,null);
         nodes[3] = new Node(5);
-        nodes[0].addChildren(new Node[]{nodes[1], nodes[2], nodes[3]});
+        nodes[0].addChildren(nodes[1], nodes[2], nodes[3]);
 
         nodes[4] = new Node(2);
         nodes[5] = new Node(3);
         nodes[6] = new Node(4);
-        nodes[2].addChildren(new Node[]{nodes[4], nodes[5], nodes[6]});
+        nodes[2].addChildren(nodes[4], nodes[5], nodes[6]);
 
-        CPABEAccessTree accessTree = new CPABEAccessTree(nodes[0]);
-        accessTree.generateLeaveSequence();
+        AccessTreeCPABE accessTree = new AccessTreeCPABE(nodes[0]);
+        accessTree.generateLeafID();
         return accessTree;
     }
 
-    public static CPABEAccessTree getInstance2() {
+    public static AccessTreeCPABE getInstance2() {
         Node root = new Node(3,null);
         Node node1 = new Node(1, null);
         Node node2 = new Node(1,null);
         Node node3 = new Node(2, null);
-        root.addChildren(new Node[]{node1, node2, node3});
+        root.addChildren(node1, node2, node3);
 
-        node1.addChildren(new Node[]{new Node(1), new Node(2)});
-        node2.addChildren(new Node[]{new Node(3), new Node(4)});
-        node3.addChildren(new Node[]{new Node(5), new Node(6), new Node(7)});
+        node1.addChildren(new Node(1), new Node(2));
+        node2.addChildren(new Node(3), new Node(4));
+        node3.addChildren(new Node(5), new Node(6), new Node(7));
 
-        CPABEAccessTree accessTree = new CPABEAccessTree(root);
-        accessTree.generateLeaveSequence();
+        AccessTreeCPABE accessTree = new AccessTreeCPABE(root);
+        accessTree.generateLeafID();
         return accessTree;
     }
 
-    public static CPABEAccessTree getInstance3() {
+    public static AccessTreeCPABE getInstance3() {
         Node root = new Node(3,null);
         Node node1 = new Node(1, null);
         Node node2 = new Node(1,null);
         Node node3 = new Node(2, null);
-        root.addChildren(new Node[]{node1, node2, node3});
+        root.addChildren(node1, node2, node3);
 
-        node1.addChildren(new Node[]{new Node(1), new Node(2)});
-        node2.addChildren(new Node[]{new Node(3), new Node(4)});
-        node3.addChildren(new Node[]{new Node(1), new Node(6), new Node(7)});
+        node1.addChildren(new Node(1), new Node(2));
+        node2.addChildren(new Node(3), new Node(4));
+        node3.addChildren(new Node(1), new Node(6), new Node(7));
 
-        CPABEAccessTree accessTree = new CPABEAccessTree(root);
-        accessTree.generateLeaveSequence();
+        AccessTreeCPABE accessTree = new AccessTreeCPABE(root);
+        accessTree.generateLeafID();
         return accessTree;
     }
 
@@ -252,6 +257,6 @@ public class CPABEAccessTree implements Iterable<CPABEAccessTree.Node> {
         nodes[2].addChild(nodes[5]);
         nodes[2].addChild(nodes[6]);
 
-        CPABEAccessTree accesstree = new CPABEAccessTree(nodes[0]);
+        AccessTreeCPABE accesstree = new AccessTreeCPABE(nodes[0]);
     }
 }

@@ -3,11 +3,10 @@ package EHCPABE;
 import Utils.MathUtils;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
 import java.util.*;
 
-public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
+public class AccessTreeEHCPABE implements Iterable<AccessTreeEHCPABE.Node> {
 
     public static class Node {
 
@@ -53,7 +52,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
     // accessTree：包装好根节点
     public Node root;
 
-    public EHCPABEAccessTree(Node root) {
+    public AccessTreeEHCPABE(Node root) {
         this.root = root;
     }
 
@@ -180,7 +179,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         }
     }
 
-    public static EHCPABEAccessTree getInstance1() {
+    public static AccessTreeEHCPABE getInstance1() {
         Node rA = new Node(2, "src/EHCPABE/EHCPABEFile/test1/FileA.txt", null);
         Node B = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileB.txt",null);
         Node C = new Node(1, "src/EHCPABE/EHCPABEFile/test1/FileC.txt", null);
@@ -197,7 +196,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
         Node D4 = new Node(4);Node D5 = new Node(5); Node D6 = new Node(6);
         D.addChild(D4);D.addChild(D5);D.addChild(D6);
 
-        EHCPABEAccessTree accessTree = new EHCPABEAccessTree(rA);
+        AccessTreeEHCPABE accessTree = new AccessTreeEHCPABE(rA);
         accessTree.generateLeaveSequence();
         return accessTree;
     }
@@ -205,7 +204,7 @@ public class EHCPABEAccessTree implements Iterable<EHCPABEAccessTree.Node> {
 
 
     public static void main(String[] args) {
-        EHCPABEAccessTree A = getInstance1();
+        AccessTreeEHCPABE A = getInstance1();
         int i = 0;
     }
 }

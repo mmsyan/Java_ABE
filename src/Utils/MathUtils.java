@@ -12,13 +12,29 @@ import java.util.Set;
 
 public class MathUtils {
 
-    // String => g ∈ G1
+    /**
+     * String => g ∈ G1
+     * */
     public static Element H1(String string, Pairing bp) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(string.getBytes());
             byte[] m = md.digest();
             return bp.getG1().newElementFromHash(m, 0, m.length).getImmutable();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * String => g ∈ Zr
+     * */
+    public static Element H(String string, Pairing bp) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(string.getBytes());
+            byte[] m = md.digest();
+            return bp.getZr().newElementFromHash(m, 0, m.length).getImmutable();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -100,7 +116,9 @@ public class MathUtils {
         return result;
     }
 
-    // 生成一个degree-1次、常数项系数为constantTerm的多项式
+    /**
+     * 生成一个degree-1次、常数项系数为constantTerm的多项式
+     */
     public static Element[] generateRandomPolynomial(int degree, Element constantTerm, Pairing pairing) {
         Element[] coefficients = new Element[degree];
         coefficients[0] = constantTerm;  // 常数项系数
@@ -131,13 +149,21 @@ public class MathUtils {
         return result;
     }
 
-    public static int[] findCommonAttributes(int[] messageAttributes, int[] userAttributes, int requiredCount) {
+    /**
+     * 查找两个属性集合中的公共属性，并返回至少包含指定数量的公共属性的子集。
+     *
+     * @param attributeSet1 第一个属性集合。
+     * @param attributeSet2 第二个属性集合。
+     * @param requiredCount 需要返回的公共属性的最小数量。
+     * @return 如果两个集合中至少有 requiredCount 个公共属性，则返回这些公共属性的数组；否则返回 null。
+     */
+    public static int[] findCommonAttributes(int[] attributeSet1, int[] attributeSet2, int requiredCount) {
         Set<Integer> messageAttributeSet = new HashSet<>();
-        for (int attribute : messageAttributes) {
+        for (int attribute : attributeSet1) {
             messageAttributeSet.add(attribute);
         }
         List<Integer> commonAttributes = new ArrayList<>();
-        for (int attribute : userAttributes) {
+        for (int attribute : attributeSet2) {
             if (messageAttributeSet.contains(attribute)) {
                 commonAttributes.add(attribute);
             }
@@ -155,23 +181,24 @@ public class MathUtils {
     }
 
     /**
-     * Computes the Lagrange basis polynomial at a given point x.
+     * 计算给定点 x 处的拉格朗日基多项式。
      *
-     * @param i The element for which the Lagrange basis polynomial is being computed.
-     * @param s An array of integers representing the x-coordinates of known data points.
-     * @param x The point at which to evaluate the Lagrange basis polynomial.
-     * @return The value of the Lagrange basis polynomial at the given point x.
+     * @param i 正在计算拉格朗日基多项式的元素。
+     * @param s 一个整数数组，表示已知数据点的 x 坐标。
+     * @param x 要计算拉格朗日基多项式的点。
+     * @return 在给定点 x 处拉格朗日基多项式的值。
      */
     public static Element computeLagrangeBasis(int i, int[] s, int x, Pairing bp) {
         Element iElement = bp.getZr().newElement(i).getImmutable();
         Element xElement = bp.getZr().newElement(x).getImmutable();
         Element delta = bp.getZr().newOneElement().getImmutable();
 
+        // 遍历数组 s 中的每个整数 j
         for (int j : s) {
             if (i != j) {
-                Element numerator = xElement.sub(bp.getZr().newElement(j));
-                Element denominator = iElement.sub(bp.getZr().newElement(j));
-                delta = delta.mul(numerator.div(denominator));
+                Element numerator = xElement.sub(bp.getZr().newElement(j));  // 创建分子 x - j
+                Element denominator = iElement.sub(bp.getZr().newElement(j));  // 创建分母 i - j
+                delta = delta.mul(numerator.div(denominator));  // 计算 delta 与 (x - j) / (i - j) 的乘积
             }
         }
         return delta;

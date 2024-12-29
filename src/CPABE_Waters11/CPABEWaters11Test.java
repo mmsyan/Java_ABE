@@ -2,7 +2,7 @@ package CPABE_Waters11;
 
 import it.unisa.dia.gas.jpbc.Element;
 
-public class CPABEWaters11Demo {
+public class CPABEWaters11Test {
 
     public static void test1() {
         CPABEWaters11 cpabewaters11Instance = new CPABEWaters11(20);
@@ -12,7 +12,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test1/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree1();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree1();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -32,7 +32,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test2/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree2();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree2();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -52,7 +52,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test3/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree2();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree2();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -72,7 +72,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test4/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree2();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree2();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -92,7 +92,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test5/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree1();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree1();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -112,7 +112,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test6/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree1();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree1();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();
@@ -132,7 +132,7 @@ public class CPABEWaters11Demo {
         String skFilePath = "src/CPABE_Waters11/CPABEWatersFiles/test7/sk.properties";
         cpabewaters11Instance.keyGeneration(userAttributes, skFilePath);
 
-        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSDemo.getTree1();
+        CPABELewkoWatersLSSS.Node r = CPABELewkoWatersLSSSTest.getTree1();
         CPABELewkoWatersLSSS messageAccess = new CPABELewkoWatersLSSS(r, cpabewaters11Instance.getBp());
         // 随机选取Gt上的元素作为消息并打印出来
         Element M = cpabewaters11Instance.getBp().getGT().newRandomElement().getImmutable();

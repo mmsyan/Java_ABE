@@ -22,7 +22,7 @@ import java.util.Properties;
  *
  * 2024.11.03，实现了setUp keyGeneration encrypt和decrypt四个步骤；尚没有完成exExtension和inExtension步骤
  * */
-public class EHCPABEDemo {
+public class EHCPABE {
     // 全局属性大小
     private int universe;
 
@@ -38,7 +38,7 @@ public class EHCPABEDemo {
     private HashMap<String, String> plainText2Ciphertext;
     private HashMap<String, String> plainText2DecryptedText;
 
-    public EHCPABEDemo(int u, HashMap<String, String> m1,  HashMap<String, String> m2) {
+    public EHCPABE(int u, HashMap<String, String> m1, HashMap<String, String> m2) {
         this.universe = u;
         plainText2Ciphertext = m1;
         plainText2DecryptedText = m2;
@@ -83,7 +83,7 @@ public class EHCPABEDemo {
     }
 
     // 加密步骤，需要密文属性访问控制树，注意消息已经集成在访问控制树当中了
-    public void encrypt(EHCPABEAccessTree messageAttributes, String ctFilePath) throws Exception {
+    public void encrypt(AccessTreeEHCPABE messageAttributes, String ctFilePath) throws Exception {
         Properties ctProperties = new Properties();
 
         // 加密第一部分：在给定的层级访问控制树上面自上而下的生成对应的多项式
@@ -91,7 +91,7 @@ public class EHCPABEDemo {
         messageAttributes.generatePolySecret(bp, qA_0);
 
         // 加密第二部分：对于所有非叶子节点x生成：Cx(1) Cx(2) Cx(3)。对于所有叶子节点y生成：Cy Cy'
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
+        for (AccessTreeEHCPABE.Node n : messageAttributes) {
             if (n.isLeave()) {
                 int yCount = n.id;
                 Element Cy = h.powZn(n.polynomial[0]).getImmutable();
@@ -122,7 +122,7 @@ public class EHCPABEDemo {
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
-    public void decrypt(EHCPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) throws Exception {
+    public void decrypt(AccessTreeEHCPABE messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) throws Exception {
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
@@ -145,7 +145,7 @@ public class EHCPABEDemo {
         // 解密还需要准备好Cy和Cy'：这是与叶子节点是有关的，是在加密部分生成的内容。将其从密文文件中恢复出来存储到leaveNodeCy和leaveNodeCyPrime中
         HashMap<Integer, Element> leaveNodeCy = new HashMap<>();
         HashMap<Integer, Element> leaveNodeCyPrime = new HashMap<>();
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
+        for (AccessTreeEHCPABE.Node n : messageAttributes) {
             if (n.isLeave()) {
                 int yCount = n.id;
                 String CyStr = ctProperties.getProperty(("Cy"+yCount));
@@ -160,7 +160,7 @@ public class EHCPABEDemo {
         String DStr = skProperties.getProperty("D");
         Element D = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DStr)).getImmutable();
 
-        for (EHCPABEAccessTree.Node n : messageAttributes) {
+        for (AccessTreeEHCPABE.Node n : messageAttributes) {
             if (!n.isLeave() && n.filePath != null) {
                 String C1xStr = ctProperties.getProperty("C1x"+n.id);
                 Element C1x = bp.getGT().newElementFromBytes(ConversionUtils.String2Bytes(C1xStr)).getImmutable();
@@ -191,44 +191,10 @@ public class EHCPABEDemo {
 
 
 
-    public static void testCase1() throws Exception {
-        //测试文件路径
-        String skFilePath = "src/EHCPABE/EHCPABEFile/test1/sk.properties";
-        String ctFilePath = "src/EHCPABE/EHCPABEFile/test1/ct.properties";
-        System.out.println("\n测试案例1：");
-        // 初始化操作，设置属性上限为10
-
-        HashMap<String, String> m1 = new HashMap<>();
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextA.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextB.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextC.txt");
-        m1.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/CiphertextD.txt");
-
-        HashMap<String, String> m2 = new HashMap<>();
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileA.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextA.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileB.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextB.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileC.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextC.txt");
-        m2.put("src/EHCPABE/EHCPABEFile/test1/FileD.txt", "src/EHCPABE/EHCPABEFile/test1/decryptedTextD.txt");
-
-        EHCPABEDemo ehcpabeInstance = new EHCPABEDemo(10, m1, m2);
-        ehcpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 2, 5, 6};
-        ehcpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-
-        EHCPABEAccessTree tree1 = EHCPABEAccessTree.getInstance1();
-        ehcpabeInstance.encrypt(tree1, ctFilePath);
-
-
-        ehcpabeInstance.decrypt(tree1, userAttributes, skFilePath, ctFilePath);
-    }
 
 
 
 
-    public static void main(String[] args) throws Exception {
-        testCase1();
-    }
+
+
 }

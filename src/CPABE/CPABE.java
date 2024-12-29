@@ -10,7 +10,18 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import java.util.HashMap;
 import java.util.Properties;
 
-public class CPABEDemo {
+/**
+ * CPABE (Ciphertext-Policy Attribute Based Encryption) 演示类
+ * 该类展示了CPABE属性加密方案的初始化、密钥生成、加密和解密过程。
+ * J. Bethencourt, A. Sahai and B. Waters, "Ciphertext-Policy Attribute-Based Encryption," 2007 IEEE Symposium on Security and Privacy (SP '07), Berkeley, CA, USA, 2007, pp. 321-334, doi: 10.1109/SP.2007.11.
+ * keywords: {Cryptography;Access control;Secure storage;Measurement;Personnel;File servers;Monitoring;Certification;Data security;Public key},
+ * 这个构造选自文章的第4.2节：Our Construction
+ *
+ * 作者: mmsyan
+ * 完成时间: 2024-12-25
+ * 参考文献: Ciphertext-Policy Attribute-Based Encryption
+ */
+public class CPABE {
     private int universe;
     private Pairing bp;
     private Element g; //G1
@@ -19,7 +30,7 @@ public class CPABEDemo {
     private Element h; // h = g^beta;
     private Element f;
 
-    public CPABEDemo(int u) {
+    public CPABE(int u) {
         this.universe = u;
     }
 
@@ -33,6 +44,7 @@ public class CPABEDemo {
     }
 
     public void keyGeneration(int[] userAttributes, String skFilePath) {
+        checkAttributeSet(userAttributes);
         Properties skProperties = new Properties();
 
         Element r = this.bp.getZr().newRandomElement().getImmutable(); // r <- Zr
@@ -55,7 +67,7 @@ public class CPABEDemo {
         PropertiesUtils.store(skProperties, skFilePath);
     }
 
-    public void encrypt(CPABEAccessTree messageAttributes, Element message, String ctFilePath) {
+    public void encrypt(AccessTreeCPABE messageAttributes, Element message, String ctFilePath) {
         Properties ctProperties = new Properties();
 
         Element s = bp.getZr().newRandomElement().getImmutable(); // s <- Zr
@@ -66,9 +78,9 @@ public class CPABEDemo {
         ctProperties.setProperty("CWave", ConversionUtils.bytes2String(CWave.toBytes()));
         ctProperties.setProperty("C", ConversionUtils.bytes2String(C.toBytes()));
 
-        for (CPABEAccessTree.Node y : messageAttributes) {
+        for (AccessTreeCPABE.Node y : messageAttributes) {
             if (y.isLeave()) {
-                int yCount = y.leaveSequence;
+                int yCount = y.leafID;
                 Element Cy = g.powZn(y.polynomial[0]).getImmutable();
                 Element CyPrime = (MathUtils.H1(String.valueOf(y.attribute), bp)).powZn(y.polynomial[0]);
                 ctProperties.setProperty("Cy"+yCount, ConversionUtils.bytes2String(Cy.toBytes()));
@@ -79,7 +91,8 @@ public class CPABEDemo {
         PropertiesUtils.store(ctProperties, ctFilePath);
     }
 
-    public Element decrypt(CPABEAccessTree messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) {
+    public Element decrypt(AccessTreeCPABE messageAttributes, int[] userAttributes, String skFilePath, String ctFilePath) {
+        checkAttributeSet(userAttributes);
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties ctProperties = PropertiesUtils.load(ctFilePath);
 
@@ -102,9 +115,9 @@ public class CPABEDemo {
         // 解密还需要准备好Cy和Cy'：这与叶子节点是有关的
         HashMap<Integer, Element> leaveNodeCy = new HashMap<>();
         HashMap<Integer, Element> leaveNodeCyPrime = new HashMap<>();
-        for (CPABEAccessTree.Node n : messageAttributes) {
+        for (AccessTreeCPABE.Node n : messageAttributes) {
             if (n.isLeave()) {
-                int yCount = n.leaveSequence;
+                int yCount = n.leafID;
                 String CyStr = ctProperties.getProperty(("Cy"+yCount));
                 Element Cy = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(CyStr)).getImmutable();
                 String CyPrimeStr = ctProperties.getProperty("CyPrime"+yCount);
@@ -136,8 +149,9 @@ public class CPABEDemo {
     }
 
     public void delegate(int[] userAttributes, int[] subSetUserAttributes, String skFilePath, String subSetSKFilePath) {
+        checkAttributeSet(userAttributes);
         if (!MathUtils.isSubsetUsingSet(subSetUserAttributes, userAttributes)) {
-            System.out.println("需要提供用户属性的子集合！");
+            System.out.println("需要提供用户属性的子集合，你所提供的集合不在委托范围内！");
         }
         Properties skProperties = PropertiesUtils.load(skFilePath);
         Properties subSetProperties = new Properties();
@@ -166,114 +180,24 @@ public class CPABEDemo {
         PropertiesUtils.store(subSetProperties, subSetSKFilePath);
     }
 
-    public static void testCase1() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test1/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test1/ct.properties";
-        System.out.println("\n测试案例1：");
-        // 初始化操作，设置属性上限为10
-        CPABEDemo cpabeInstance = new CPABEDemo(10);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 2, 5};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree tree1 = CPABEAccessTree.getInstance1();
-        cpabeInstance.encrypt(tree1, M, ctFilePath);
-
-
-        Element M_ = cpabeInstance.decrypt(tree1, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
+    /**
+     * 生成随机的明文，供后续的测试和验证使用。
+     * @return 随机生成GT群中的元素作为明文
+     */
+    public Element generateRandomPlainText() {
+        return this.bp.getGT().newRandomElement().getImmutable();
     }
 
-    public static void testCase2() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test2/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test2/ct.properties";
-        System.out.println("\n测试案例2：");
-        // 初始化操作，设置属性上限为10
-        CPABEDemo cpabeInstance = new CPABEDemo(20);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 3, 6};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree messageAttributes = CPABEAccessTree.getInstance2();
-        cpabeInstance.encrypt(messageAttributes, M, ctFilePath);
-
-
-        Element M_ = cpabeInstance.decrypt(messageAttributes, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
-    }
-
-    public static void testCase3() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test3/sk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test3/ct.properties";
-        System.out.println("\n测试案例3：");
-        // 初始化操作，设置属性上限为10
-        CPABEDemo cpabeInstance = new CPABEDemo(20);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 3, 6};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree messageAttributes = CPABEAccessTree.getInstance3();
-        cpabeInstance.encrypt(messageAttributes, M, ctFilePath);
-
-
-        Element M_ = cpabeInstance.decrypt(messageAttributes, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
-    }
-
-    public static void testCase4() {
-        //测试文件路径
-        String skFilePath = "src/CPABE/CPABEFile/test4/sk.properties";
-        String subSetSkFilePath = "src/CPABE/CPABEFile/test4/subSetSk.properties";
-        String ctFilePath = "src/CPABE/CPABEFile/test4/ct.properties";
-
-        System.out.println("\n测试案例4：Delegate()函数测试");
-        // 初始化操作，设置属性上限为10
-        CPABEDemo cpabeInstance = new CPABEDemo(10);
-        cpabeInstance.setUp("a.properties");
-
-        // 用户输入自己属性对应的访问控制树来生成密钥
-        int[] userAttributes = new int[]{1, 2, 5};
-        cpabeInstance.keyGeneration(userAttributes, skFilePath);
-
-        // 随机选取Gt上的元素作为消息并打印出来
-        Element M = cpabeInstance.bp.getGT().newRandomElement().getImmutable();
-        System.out.println("M 是 " + M);
-        CPABEAccessTree tree1 = CPABEAccessTree.getInstance1();
-        cpabeInstance.encrypt(tree1, M, ctFilePath);
-
-        Element M_ = cpabeInstance.decrypt(tree1, userAttributes, skFilePath, ctFilePath);
-        System.out.println("M_ 是 " + M_);
-
-        // 子属性集合
-        int[] subSetUserAttributes = new int[]{5, 1};
-        cpabeInstance.delegate(userAttributes, subSetUserAttributes, skFilePath, subSetSkFilePath);
-
-        Element M1_ = cpabeInstance.decrypt(tree1, subSetUserAttributes, subSetSkFilePath, ctFilePath);
-        System.out.println("M1_ 是 " + M1_);
-    }
-
-    public static void main(String[] args) {
-        testCase1();
-        testCase2();
-        testCase3();
-        testCase4();
+    /**
+     * 检查属性数组的合法性，确保所有属性都在有效范围内。
+     * @param attributes 属性数组
+     */
+    private void checkAttributeSet(int[] attributes) {
+        if (attributes == null || attributes.length == 0)
+            throw new IllegalArgumentException("属性数组不能为空或无效");
+        for (int a : attributes) {
+            if (a < 1) throw new IllegalArgumentException("属性元素不能小于等于0");
+            if (a > this.universe) throw new IllegalArgumentException("属性元素不能超过属性宇宙的范围");
+        }
     }
 }

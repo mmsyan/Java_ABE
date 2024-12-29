@@ -198,7 +198,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
     /**
      * 生成叶子节点的编号序列。
      */
-    public void generateLeaveSequence() {
+    public void generateLeafID() {
         int sequenceNumber = 1;
         for (AccessTreeKPABE.Node n : this) {
             if (n.isLeave()) {
@@ -259,7 +259,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
         nodes[2].addChildren(nodes[4], nodes[5], nodes[6]);
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(nodes[0]);
-        accesstree.generateLeaveSequence();
+        accesstree.generateLeafID();
         return accesstree;
     }
 
@@ -275,7 +275,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
         node3.addChildren(new Node(5), new Node(6), new Node(7));
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
-        accesstree.generateLeaveSequence();
+        accesstree.generateLeafID();
         return accesstree;
     }
 
@@ -291,7 +291,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
         node3.addChildren(new Node(1), new Node(6), new Node(7));
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
-        accesstree.generateLeaveSequence();
+        accesstree.generateLeafID();
         return accesstree;
     }
 
@@ -300,7 +300,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
         root.addChildren(new Node(1), new Node(1), new Node(1), new Node(1));
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
-        accesstree.generateLeaveSequence();
+        accesstree.generateLeafID();
         return accesstree;
     }
 
@@ -309,7 +309,7 @@ public class AccessTreeKPABE implements Iterable<AccessTreeKPABE.Node> {
         root.addChildren(new Node(1), new Node(2));
 
         AccessTreeKPABE accesstree = new AccessTreeKPABE(root);
-        accesstree.generateLeaveSequence();
+        accesstree.generateLeafID();
         return accesstree;
     }
 
