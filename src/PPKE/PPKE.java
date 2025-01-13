@@ -109,6 +109,6 @@ public class PPKE {
     }
 
     public void puncture(String sk1FilePath, String sk2FilePath, String tag) {
-        
+
     }
 }
