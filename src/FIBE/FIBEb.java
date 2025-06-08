@@ -12,9 +12,12 @@ import java.util.Properties;
 /**
  * FIBE (Fuzzy Identity Based Encryption) 演示类
  * 该类展示了模糊属性加密方案的初始化、密钥生成、加密和解密过程。
- * Sahai, A., Waters, B. (2005). Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005. Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
+ * Sahai, A., Waters, B. (2005).
+ * Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005.
+ * Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
  * 这个构造选自文章的第6节：Large Universe Construction
- *
+ * 在第4节构造的方案中，公共参数T_i和主密钥t_i都需要U个，也就是随着U的增长而增长。而在这个方案当中，Z*p中所有元素都可以充当属性，
+ * 不再需要设置U。但是也需要额外设置n，We restrict encryption identities to be of length n for some fixed n.
  * 作者: mmsyan
  * 完成时间: 2024-12-24
  * 参考文献: Fuzzy Identity-Based Encryption
@@ -25,9 +28,9 @@ public class FIBEb {
     private Pairing bp;
     private Element g; // g ∈ G1
     private Element y; // y ∈ Zr
-    private Element g1; // g1 = g^y
-    private Element g2; // g2 ∈ G1
-    private Element[] pk_Ti; // G1
+    private Element g1; // First, choose g1 = g^y, g2 ∈ G1
+    private Element g2; // First, choose g1 = g^y, g2 ∈ G1
+    private Element[] pk_Ti; // Next, choose t1, t2, ..., tn+1 uniformly at random from G1
 
     public FIBEb(int n, int d) {
         this.n = n;
@@ -46,11 +49,11 @@ public class FIBEb {
         g1 = g.powZn(y).getImmutable();
         g2 = bp.getG1().newRandomElement().getImmutable();
 
-        // 为每个属性生成公钥。注意pk_ti[0]是没有任何意义的。
+        // 为每个N={1,2,...,N+1}当中的每个数生成公钥。注意pk_ti[0]是没有任何意义的。
         for (int i = 1; i < this.pk_Ti.length; i++) {
             pk_Ti[i] = bp.getG1().newRandomElement().getImmutable(); // pk: t_1 t_2 …… t_n, t_n+1 <- G1
         }
-        System.out.println("已成功初始化，属性集合的大小上限为 " + this.n + "，容错距离为 " + this.d);
+        System.out.println("已成功初始化，可使用的属性个数上限为 " + this.n + "，模糊容错距离为 " + this.d);
     }
 
     /**
@@ -63,6 +66,7 @@ public class FIBEb {
         checkAttributeSet(userAttributes);
 
         // 生成随机多项式q(x)用于加密计算。q(0)=y
+        // A d − 1 degree polynomial q is randomly chosen such that q(0) = y.
         Element[] q = MathUtils.generateRandomPolynomial(d, y, bp);
 
         // 存储用户私钥的属性文件
@@ -70,13 +74,14 @@ public class FIBEb {
 
         // 为用户的每个属性生成对应的私钥
         for (int i : userAttributes) {
-            Element ri = bp.getZr().newRandomElement().getImmutable(); // 获取随机的ri
+            // where ri is a random member of Zp defined for all i ∈ ω. 获取随机的ri
+            Element ri = bp.getZr().newRandomElement().getImmutable();
             Element qi = MathUtils.qx(q, bp.getZr().newElement(i)); // 计算q(i)
             Element Di = (g2.powZn(qi)).mul(T(i).powZn(ri)).getImmutable(); // 计算Di = [g2^(q(i))] * [T(i)^ri]
             Element di = g.powZn(ri); // di = g^(ri)
 
-
-            // 将私钥保存到属性文件中
+            // 将私钥保存到属性文件中 .
+            // The private key will consist of two sets. The first set, {Di}i∈ω,The other set is {di}i∈ω
             skProperties.setProperty("D" + i, ConversionUtils.bytes2String(Di.toBytes()));
             skProperties.setProperty("d" + i, ConversionUtils.bytes2String(di.toBytes()));
         }
@@ -112,7 +117,6 @@ public class FIBEb {
         // 计算加密后的密文组件 E'' = g^s
         Element EPrimePrime = g.powZn(s).getImmutable();
         ctProperties.setProperty("E'' ", ConversionUtils.bytes2String(EPrimePrime.toBytes()));
-
 
         // 为每个消息属性计算对应的密文组件Ei = T(i)^s
         for (int i : messageAttributes) {
@@ -162,13 +166,14 @@ public class FIBEb {
 
         // 计算Lagrange基并累乘相应的e(Di, Ei)^delta项
         for (int i : S) {
+            // 观察公式，准备好di Ei Di。注意E''与属性i无关，是唯一的。
             String DiStr = skProperties.getProperty("D" + i);
             Element Di = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(DiStr)).getImmutable();
             String diStr = skProperties.getProperty("d" + i);
             Element di = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(diStr)).getImmutable();
             String EiStr = ctProperties.getProperty("E" + i);
             Element Ei = bp.getG1().newElementFromBytes(ConversionUtils.String2Bytes(EiStr)).getImmutable();
-
+            // 计算delta
             Element delta = MathUtils.computeLagrangeBasis(i, S, 0, bp);
             denominator = denominator.mul((bp.pairing(di, Ei).div(bp.pairing(Di, EPrimePrime))).powZn(delta)); // 计算分母项
         }
@@ -179,11 +184,16 @@ public class FIBEb {
         return decryptedMessage;
     }
 
+    /**
+     * Let N be the set {1 ... n+1} and we define a function T, as T(x)
+     * We can view T as the function (g_2)^(x^n) * g^(h(x)) for some n degree polynomial h
+     * */
     private Element T(int x) {
         Element xElement = bp.getZr().newElement(x).getImmutable();
-        Element xn = xElement.powZn(bp.getZr().newElement(n)).getImmutable();
+        Element xn = xElement.powZn(bp.getZr().newElement(n)).getImmutable();  // x^n
         Element result = this.g2.powZn(xn).getImmutable(); // g2^(x^n)
 
+        // Let N be the set {1 ... n+1}
         int[] N = new int[n+1];
         for (int i = 0; i < N.length; i++) {
             N[i] = i+1;

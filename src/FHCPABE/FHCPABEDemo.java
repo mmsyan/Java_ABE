@@ -15,12 +15,6 @@ import java.util.HashMap;
 import java.util.Properties;
 
 /**
- * Xiao, M., Li, H., Huang, Q., Yu, S., & Susilo, W. (2022).
- * Attribute-Based Hierarchical Access Control With Extendable Policy.
- * IEEE Transactions on Information Forensics and Security, 17, 1868–1883.
- * <a href="https://doi.org/10.1109/tifs.2022.3173412">...</a>
- *
- * 2024.11.03，实现了setUp keyGeneration encrypt和decrypt四个步骤；尚没有完成exExtension和inExtension步骤
  * */
 public class FHCPABEDemo {
     // 全局属性大小

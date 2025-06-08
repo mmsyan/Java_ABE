@@ -12,7 +12,9 @@ import java.util.Properties;
 /**
  * FIBE (Fuzzy Identity Based Encryption) 演示类
  * 该类展示了模糊属性加密方案的初始化、密钥生成、加密和解密过程。
- * Sahai, A., Waters, B. (2005). Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005. Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
+ * Sahai, A., Waters, B. (2005).
+ * Fuzzy Identity-Based Encryption. In: Cramer, R. (eds) Advances in Cryptology – EUROCRYPT 2005. EUROCRYPT 2005.
+ * Lecture Notes in Computer Science, vol 3494. Springer, Berlin, Heidelberg. https://doi.org/10.1007/11426639_27
  * 这个构造选自文章的第4节：Our Construction
  *
  * 作者: mmsyan

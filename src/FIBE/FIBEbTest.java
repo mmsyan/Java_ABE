@@ -40,8 +40,8 @@ public class FIBEbTest {
      * 输入的用户属性为【0, 2, 4】，密文属性为【1, 2, 3】。
      */
     public static void testCase2() {
-        String skFilePath = "src/FIBE/FIBEFile/test2/sk.properties";
-        String ctFilePath = "src/FIBE/FIBEFile/test2/ct.properties";
+        String skFilePath = "src/FIBE/FIBEbFile/test2/sk.properties";
+        String ctFilePath = "src/FIBE/FIBEbFile/test2/ct.properties";
 
         System.out.println("\n测试案例2：");
         FIBEa fibeInstance = new FIBEa(5, 2);
@@ -55,6 +55,71 @@ public class FIBEbTest {
         }
     }
 
+    /**
+     * 测试案例3：
+     * 使用属性集合上限为8以及容错距离为5的参数，演示加密和解密过程。
+     * 输入的用户属性为【0, 5, 6, 10, 11, 15】, 密文属性为【0, 5, 6, 8, 11, 15, 16】。
+     */
+    public static void testCase3() {
+        String skFilePath = "src/FIBE/FIBEbFile/test3/sk.properties";
+        String ctFilePath = "src/FIBE/FIBEbFile/test3/ct.properties";
+
+        System.out.println("\n测试案例3：");
+        FIBEb fibeInstance = new FIBEb(8, 5);
+        fibeInstance.setUp("a.properties");
+        fibeInstance.keyGeneration(new int[]{1, 5, 6, 10, 11, 15}, skFilePath); // 为属性【1, 5, 6, 10, 11, 15】的用户生成密钥
+        Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
+        System.out.println("测试案例3中M 是 " + M);
+        fibeInstance.encrypt(new int[]{1, 5, 6, 8, 11, 15, 16}, M, ctFilePath); // 设置密文属性为【1, 5, 6, 8, 11, 15, 16】
+        Element M_ = fibeInstance.decrypt(new int[]{1, 5, 6, 10, 11, 15}, skFilePath, ctFilePath);
+        System.out.println("测试案例3中M_ 是 " + M_);
+    }
+
+    /**
+     * 测试案例4：
+     * 使用属性集合上限为8以及容错距离为5的参数，演示加密和解密过程。
+     * 输入的用户属性为【0, 50, 600, 1000, 11, 15】, 密文属性为【0, 50, 600, 8, 11, 15, 17, 160】。
+     */
+    public static void testCase4() {
+        String skFilePath = "src/FIBE/FIBEbFile/test4/sk.properties";
+        String ctFilePath = "src/FIBE/FIBEbFile/test4/ct.properties";
+
+        System.out.println("\n测试案例4：");
+        FIBEb fibeInstance = new FIBEb(8, 5);
+        fibeInstance.setUp("a.properties");
+        // 为属性【0, 50, 600, 1000, 11, 15,】的用户生成密钥
+        fibeInstance.keyGeneration(new int[]{0, 50, 600, 1000, 11, 15,}, skFilePath);
+        Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
+        System.out.println("测试案例4中M 是 " + M);
+        // 设置密文属性为【0, 50, 600, 8, 11, 15, 17, 160】
+        fibeInstance.encrypt(new int[]{0, 50, 600, 8, 11, 15, 17, 160}, M, ctFilePath);
+        Element M_ = fibeInstance.decrypt(new int[]{0, 50, 600, 1000, 11, 15}, skFilePath, ctFilePath);
+        System.out.println("测试案例4中M_ 是 " + M_);
+    }
+
+    /**
+     * 测试案例4：
+     * 使用属性集合上限为4以及容错距离为5的参数
+     * 输入的用户属性为【0, 50, 600, 1000, 11, 15】, 密文属性为【0, 50, 600, 8, 11, 15, 17, 160】。
+     * 由于用户属性和密文属性个数大于4，所以解密会失败
+     */
+    public static void testCase5() {
+        String skFilePath = "src/FIBE/FIBEbFile/test5/sk.properties";
+        String ctFilePath = "src/FIBE/FIBEbFile/test5/ct.properties";
+
+        System.out.println("\n测试案例5：");
+        FIBEb fibeInstance = new FIBEb(4, 5);
+        fibeInstance.setUp("a.properties");
+        // 为属性【0, 50, 600, 1000, 11, 15,】的用户生成密钥
+        fibeInstance.keyGeneration(new int[]{0, 50, 600, 1000, 11, 15,}, skFilePath);
+        Element M = fibeInstance.generateRandomPlainText(); // 生成随机明文
+        System.out.println("测试案例5中M 是 " + M);
+        // 设置密文属性为【0, 50, 600, 8, 11, 15, 17, 160】
+        fibeInstance.encrypt(new int[]{0, 50, 600, 8, 11, 15, 17, 160}, M, ctFilePath);
+        Element M_ = fibeInstance.decrypt(new int[]{0, 50, 600, 1000, 11, 15}, skFilePath, ctFilePath);
+        System.out.println("测试案例5中M_ 是 " + M_);
+    }
+
 
     /**
      * 主方法，用于演示FIBE Section6 Large Universe Construction加密方案
@@ -63,6 +128,9 @@ public class FIBEbTest {
      */
     public static void main(String[] args) throws Exception {
         testCase1();
-
+        testCase2();
+        testCase3();
+        testCase4();
+        testCase5();
     }
 }
