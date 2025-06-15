@@ -43,13 +43,11 @@ public class Accumulator {
 
     public Element Commit(Set<Element> X) {
         // Ax = g1^{(x1+s)(x2+s)...(x|X|+s)}
-        // 方法1: 先计算指数的乘积，再做一次幂运算
-        Element exponent = bp.getZr().newOneElement(); // 从1开始
-        for (Element x : X) {
-            Element temp = x.add(s); // x + s
-            exponent = exponent.mul(temp); // 累乘: (x1+s)(x2+s)...(x|X|+s)
+        Element[] coeffs = Utils.expandPolynomial(X, this.bp);
+        Element Ax = bp.getG1().newOneElement();
+        for (int i = 0; i < coeffs.length; i++) {
+            Ax.mul(g1Powers[i].powZn(coeffs[i]));
         }
-        Element Ax = g1.powZn(exponent); // g1^{累乘结果}
         return Ax.getImmutable();
     }
 
